@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>주식 자산 통합 관리 시스템</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f9; max-width: 700px; margin-left: auto; margin-right: auto; }
+        h1 { color: #333; text-align: center; font-size: 1.5rem; }
+        .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .card { background: white; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .highlight { color: #0066cc; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; font-size: 0.9em; }
+        th { background-color: #f8f9fa; cursor: pointer; user-select: none; }
+        th:hover { background-color: #e2e6ea; }
+        .total-card { background-color: #eef9ff; border: 2px solid #bce8ff; }
+        input[type="text"] { width: 100%; padding: 4px; box-sizing: border-box; font-size: 0.9em; border: 1px solid #ccc; border-radius: 4px; }
+        .mask-btn { background-color: #333; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.9em; }
+        .mask-btn:hover { background-color: #555; }
+    </style>
+</head>
+<body>
+
+    <div class="header-bar">
+        <h1>📈 주식 포트폴리오</h1>
+        <button class="mask-btn" id="maskToggleBtn" onclick="toggleMask()">🔒 금액 숨기기</button>
+    </div>
+
+    <!-- 1. 총합산 카드 -->
+    <div class="card total-card">
+        <h3>💰 총 자산 현황</h3>
+        <p>총 매입 금액: <span id="grand-total" class="highlight">0</span>원</p>
+    </div>
+
+    <!-- 2. 종목별 통합 집계 카드 -->
+    <div class="card">
+        <h3>📊 종목별 통합 보유 현황</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>종목명</th>
+                    <th style="text-align: right;">총 매입금액 (비중)</th>
+                </tr>
+            </thead>
+            <tbody id="stock-summary-body">
+                <!-- 동적 생성 -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 3. 계좌별 상세 내역 -->
+    <div class="card">
+        <h3>계좌별 상세 내역</h3>
+        <p style="font-size: 0.85em; color: #666;">항목을 직접 수정하면 실시간으로 반영됩니다. 제목을 누르면 정렬됩니다.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th onclick="sortTable(0)">계좌명 ↕</th>
+                    <th onclick="sortTable(1)">종목명 ↕</th>
+                    <th style="text-align: right;" onclick="sortTable(2)">매입금액 (비중) ↕</th>
+                </tr>
+            </thead>
+            <tbody id="account-table-body">
+                <tr><td>나무(CMA)</td><td>3.하이닉스 밸류체인 ETF</td><td data-raw="74944150">74944150</td></tr>
+                <tr><td>나무(ISA)</td><td>3.하이닉스 밸류체인 ETF</td><td data-raw="25743575">25743575</td></tr>
+                <tr><td>미래(CMA)</td><td>3.하이닉스 밸류체인 ETF</td><td data-raw="13245190">13245190</td></tr>
+                <tr><td>미래(ISA)</td><td>3.하이닉스 밸류체인 ETF</td><td data-raw="231700">231700</td></tr>
+                <tr><td>미래(CMA)</td><td>1.삼성전자</td><td data-raw="24971300">24971300</td></tr>
+                <tr><td>미래(ISA)</td><td>1.삼성전자</td><td data-raw="20103400">20103400</td></tr>
+                <tr><td>나무(CMA)</td><td>1.삼성전자</td><td data-raw="136301000">136301000</td></tr>
+                <tr><td>나무(ISA)</td><td>1.삼성전자</td><td data-raw="50771100">50771100</td></tr>
+                <tr><td>삼성증권</td><td>1.삼성전자</td><td data-raw="7746000">7746000</td></tr>
+                <tr><td>미래 (ISA)</td><td>2.삼성전자우</td><td data-raw="22968800">22968800</td></tr>
+                <tr><td>미래(CMA)</td><td>2.삼성전자우</td><td data-raw="23678800">23678800</td></tr>
+                <tr><td>나무(CMA)</td><td>2.삼성전자우</td><td data-raw="41437000">41437000</td></tr>
+                <tr><td>나무(CMA)</td><td>4.삼성전자레버리지</td><td data-raw="59083615">59083615</td></tr>
+                <tr><td>나무(CMA)</td><td>4.하이닉스레버리지</td><td data-raw="61601485">61601485</td></tr>
+                <tr><td>나무(CMA)</td><td>4.TIGER200IT레버리지</td><td data-raw="31554710">31554710</td></tr>
+                <tr><td>나무(CMA)</td><td>5.오로스테크놀로지</td><td data-raw="60291000">60291000</td></tr>
+                <tr><td>나무(CMA)</td><td>6.테크윙</td><td data-raw="49511500">49511500</td></tr>
+                <tr><td>나무(ISA)</td><td>7.디앤디파마텍</td><td data-raw="31307300">31307300</td></tr>
+                <tr><td>나무(CMA)</td><td>7.디앤디파마텍</td><td data-raw="40923900">40923900</td></tr>
+                <tr><td>나무(CMA)</td><td>8.현금</td><td data-raw="0">0</td></tr>
+                <tr><td>나무(ISA)</td><td>8.현금</td><td data-raw="0">0</td></tr>
+                <tr><td>미래(CMA)</td><td>8.현금</td><td data-raw="0">0</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        let sortDirections = [true, true, true];
+        let isMasked = false;
+
+        function toggleMask() {
+            isMasked = !isMasked;
+            const btn = document.getElementById("maskToggleBtn");
+            if (isMasked) {
+                btn.innerText = "👁️ 금액 보이기";
+                btn.style.backgroundColor = "#0066cc";
+            } else {
+                btn.innerText = "🔒 금액 숨기기";
+                btn.style.backgroundColor = "#333";
+            }
+            renderApp();
+        }
+
+        function renderApp() {
+            const rows = document.querySelectorAll("#account-table-body tr");
+            let stockMap = {};
+            let grandTotal = 0;
+            let rowDataList = [];
+
+            // 1단계: 모든 행에서 최신 데이터를 안전하게 수집
+            rows.forEach(row => {
+                let account, stock, rawAmount;
+
+                const accInput = row.cells[0].querySelector("input");
+                const stockInput = row.cells[1].querySelector("input");
+                const amtInput = row.cells[2].querySelector("input");
+
+                account = accInput ? accInput.value : row.cells[0].innerText;
+                stock = stockInput ? stockInput.value : row.cells[1].innerText;
+
+                if (amtInput) {
+                    rawAmount = Number(amtInput.getAttribute("data-raw")) || 0;
+                } else {
+                    rawAmount = Number(row.cells[2].getAttribute("data-raw")) || 0;
+                }
+
+                grandTotal += rawAmount;
+                rowDataList.push({ account, stock, amount: rawAmount });
+
+                if (stockMap[stock]) {
+                    stockMap[stock] += rawAmount;
+                } else {
+                    stockMap[stock] = rawAmount;
+                }
+            });
+
+            // 총 자산 표시 (마스킹 적용)
+            document.getElementById("grand-total").innerText = isMasked ? "******" : grandTotal.toLocaleString();
+
+            // 2단계: 계좌별 상세 내역 표 다시 그리기 (마스킹 적용 시 입력창 내용만 ******로 대체)
+            const accountTbody = document.getElementById("account-table-body");
+            accountTbody.innerHTML = "";
+
+            rowDataList.forEach((data) => {
+                const tr = document.createElement("tr");
+                const weight = grandTotal > 0 ? ((data.amount / grandTotal) * 100).toFixed(1) : 0;
+                const displayVal = isMasked ? "******" : data.amount.toLocaleString();
+
+                tr.innerHTML = `
+                    <td><input type="text" value="${data.account}" oninput="renderApp()"></td>
+                    <td><input type="text" value="${data.stock}" oninput="renderApp()"></td>
+                    <td style="text-align: right;">
+                        <input type="text" style="text-align: right; width: 70%;" value="${displayVal}" oninput="updateAmount(this)" data-raw="${data.amount}">원 
+                        <span style="font-size:0.8em; color:#666;">(${weight}%)</span>
+                    </td>
+                `;
+                accountTbody.appendChild(tr);
+            });
+
+            // 3단계: 종목별 통합 현황 표 채우기
+            const summaryBody = document.getElementById("stock-summary-body");
+            summaryBody.innerHTML = "";
+
+            const sortedStocks = Object.entries(stockMap).sort((a, b) => b[1] - a[1]);
+
+            sortedStocks.forEach(([stock, amount]) => {
+                const weight = grandTotal > 0 ? ((amount / grandTotal) * 100).toFixed(1) : 0;
+                const displayVal = isMasked ? "******" : amount.toLocaleString();
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>${stock}</td>
+                    <td style="text-align: right;">${displayVal}원 <span style="font-size:0.85em; color:#666;">(${weight}%)</span></td>
+                `;
+                summaryBody.appendChild(tr);
+            });
+        }
+
+        // 금액 입력 시 처리
+        function updateAmount(input) {
+            let cleanVal = input.value.replace(/[^0-9]/g, "");
+            let number = Number(cleanVal) || 0;
+            input.setAttribute("data-raw", number);
+            input.value = number.toLocaleString();
+            renderApp();
+        }
+
+        // 정렬 기능
+        function sortTable(columnIndex) {
+            const tbody = document.getElementById("account-table-body");
+            let rows = Array.from(tbody.querySelectorAll("tr"));
+            let ascending = sortDirections[columnIndex];
+
+            rows.sort((rowA, rowB) => {
+                let valA, valB;
+
+                if (columnIndex === 2) {
+                    valA = Number(rowA.cells[2].querySelector("input").getAttribute("data-raw")) || 0;
+                    valB = Number(rowB.cells[2].querySelector("input").getAttribute("data-raw")) || 0;
+                    return ascending ? valA - valB : valB - valA;
+                } else {
+                    valA = rowA.cells[columnIndex].querySelector("input").value.trim();
+                    valB = rowB.cells[columnIndex].querySelector("input").value.trim();
+                    return ascending ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                }
+            });
+
+            sortDirections[columnIndex] = !ascending;
+            tbody.innerHTML = "";
+            rows.forEach(row => tbody.appendChild(row));
+            renderApp();
+        }
+
+        // 페이지 최초 로드 시 실행
+        window.onload = function() {
+            const tbody = document.getElementById("account-table-body");
+            let rows = Array.from(tbody.querySelectorAll("tr"));
+
+            // 초기 HTML에 박혀있는 숫자를 input 박스 형태로 일괄 변환
+            rows.forEach(row => {
+                let rawVal = row.cells[2].getAttribute("data-raw") || "0";
+                row.cells[2].innerHTML = `
+                    <input type="text" style="text-align: right; width: 70%;" value="${Number(rawVal).toLocaleString()}" oninput="updateAmount(this)" data-raw="${rawVal}">원 
+                    <span style="font-size:0.8em; color:#666;">(0%)</span>
+                `;
+            });
+
+            // 기본 정렬 적용: 1. 종목명 오름차순 + 2. 금액 큰 순
+            rows.sort((rowA, rowB) => {
+                let stockA = rowA.cells[1].querySelector("input").value.trim();
+                let stockB = rowB.cells[1].querySelector("input").value.trim();
+                let comp = stockA.localeCompare(stockB);
+                if (comp !== 0) return comp;
+
+                let amtA = Number(rowA.cells[2].querySelector("input").getAttribute("data-raw")) || 0;
+                let amtB = Number(rowB.cells[2].querySelector("input").getAttribute("data-raw")) || 0;
+                return amtB - amtA;
+            });
+
+            tbody.innerHTML = "";
+            rows.forEach(row => tbody.appendChild(row));
+            
+            // 모든 세팅이 끝난 뒤 최초 렌더링 실행
+            renderApp();
+        };
+    </script>
+
+</body>
+</html>

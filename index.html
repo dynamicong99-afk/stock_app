@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>My Stock Assets - Bento Grid</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js 및 DataLabels 플러그인 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <!-- CryptoJS (암호화/복호화 라이브러리) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            blue: '#007aff',
+                            green: '#34c759',
+                            darkBg: '#0b0e14',
+                            cardDark: '#121622'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-brand-darkBg text-gray-900 dark:text-gray-100 min-h-screen p-4 transition-colors duration-300">
+
+    <!-- 모바일 최적화 컨테이너 -->
+    <div class="max-w-[480px] mx-auto space-y-4 pb-12">
+
+        <!-- 상단 헤더 & 컨트롤 바 -->
+        <div class="flex justify-between items-center py-2">
+            <h1 class="text-xl font-black tracking-tight flex items-center gap-2 text-gray-900 dark:text-white uppercase">
+                <i data-lucide="trending-up" class="w-6 h-6 text-blue-500"></i>
+                MY STOCK ASSETS
+            </h1>
+            <div class="flex items-center gap-1.5">
+                <button id="maskToggleBtn" onclick="toggleMask()" title="금액 숨기기/보이기" class="p-2 rounded-full border border-gray-300 dark:border-gray-800 bg-white dark:bg-[#181d2a] text-xs font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition shadow-sm text-gray-700 dark:text-gray-200 flex items-center justify-center">
+                    <i data-lucide="eye" class="w-4 h-4 text-blue-500 dark:text-blue-400" id="maskIcon"></i>
+                </button>
+                <button onclick="toggleDarkMode()" title="다크모드 전환" class="p-2 rounded-full border border-gray-300 dark:border-gray-800 bg-white dark:bg-[#181d2a] text-xs hover:bg-gray-50 dark:hover:bg-gray-800 transition shadow-sm flex items-center justify-center">
+                    <i data-lucide="moon" class="w-4 h-4 hidden dark:block"></i>
+                    <i data-lucide="sun" class="w-4 h-4 block dark:hidden"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 최상단 서식 탑재 메모 카드 (편집/뷰 모드 토글) -->
+        <div class="bg-white dark:bg-brand-cardDark border border-amber-500/30 dark:border-amber-500/20 rounded-3xl p-5 shadow-sm dark:shadow-xl flex flex-col space-y-3">
+            <div class="flex justify-between items-center">
+                <h3 class="text-sm font-bold flex items-center gap-1.5 text-gray-900 dark:text-white">
+                    <i data-lucide="notebook-pen" class="w-4 h-4 text-amber-500"></i>
+                    메모
+                </h3>
+                <button id="topMemoToggleBtn" onclick="toggleTopMemoEdit()" class="px-3 py-1 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-semibold text-xs hover:bg-amber-500/20 transition flex items-center gap-1">
+                    <i data-lucide="pencil" class="w-3 h-3" id="topMemoBtnIcon"></i>
+                    <span id="topMemoBtnText">Edit</span>
+                </button>
+            </div>
+
+            <!-- 서식 툴바 (편집 모드 시 노출) -->
+            <div id="topMemoToolbar" class="hidden flex flex-wrap items-center gap-1.5 p-2 bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-800 rounded-2xl text-xs">
+                <!-- 글자 크기 선택 -->
+                <select id="memoFontSize" onchange="applyMemoStyle()" class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-1.5 py-1 text-[11px] font-semibold text-gray-700 dark:text-gray-200 focus:outline-none cursor-pointer">
+                    <option value="12px">12px</option>
+                    <option value="14px" selected>14px</option>
+                    <option value="16px">16px</option>
+                    <option value="18px">18px</option>
+                    <option value="20px">20px</option>
+                    <option value="24px">24px</option>
+                    <option value="28px">28px</option>
+                    <option value="32px">32px</option>
+                </select>
+
+                <!-- Color Picker -->
+                <div class="flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-1.5 py-0.5">
+                    <i data-lucide="palette" class="w-3.5 h-3.5 text-gray-500"></i>
+                    <input type="color" id="memoColor" value="#1f2937" onchange="applyMemoStyle()" class="w-5 h-5 bg-transparent border-0 cursor-pointer rounded">
+                </div>
+
+                <!-- 스타일 버튼 그룹 -->
+                <div class="flex items-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-0.5">
+                    <button id="btnBold" onclick="toggleStyleState('bold')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 font-black text-xs w-6 h-6 flex items-center justify-center">B</button>
+                    <button id="btnItalic" onclick="toggleStyleState('italic')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 italic text-xs w-6 h-6 flex items-center justify-center">I</button>
+                    <button id="btnUnderline" onclick="toggleStyleState('underline')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 underline text-xs w-6 h-6 flex items-center justify-center">U</button>
+                </div>
+
+                <!-- 정렬 버튼 그룹 -->
+                <div class="flex items-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-0.5">
+                    <button id="btnAlignLeft" onclick="setMemoAlign('left')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 w-6 h-6 flex items-center justify-center"><i data-lucide="align-left" class="w-3.5 h-3.5"></i></button>
+                    <button id="btnAlignCenter" onclick="setMemoAlign('center')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 w-6 h-6 flex items-center justify-center"><i data-lucide="align-center" class="w-3.5 h-3.5"></i></button>
+                    <button id="btnAlignRight" onclick="setMemoAlign('right')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 w-6 h-6 flex items-center justify-center"><i data-lucide="align-right" class="w-3.5 h-3.5"></i></button>
+                </div>
+            </div>
+
+            <!-- 1. 뷰 모드용 영역 (텍스트만 깔끔하게 노출) -->
+            <div id="topMemoView" class="whitespace-pre-line leading-relaxed font-medium min-h-[40px]"></div>
+
+            <!-- 2. 편집 모드용 영역 (Textarea) -->
+            <textarea id="topMemoTextarea" placeholder="메모할 내용을 입력하세요..." class="hidden w-full min-h-[90px] p-3 rounded-2xl border border-amber-400/50 bg-amber-50/30 dark:bg-gray-900/80 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-amber-500 resize-y leading-relaxed font-medium transition"></textarea>
+        </div>
+
+        <!-- 1. 총 자산 현황 카드 -->
+        <div class="bg-white dark:bg-brand-cardDark border border-gray-200 dark:border-gray-800/80 rounded-3xl p-5 shadow-sm dark:shadow-xl flex flex-col justify-between relative overflow-hidden">
+            <div class="flex items-center gap-2 mb-2">
+                <span class="px-2.5 py-1 rounded-xl bg-blue-500/10 text-blue-500 font-bold text-xs flex items-center gap-1.5">
+                    <i data-lucide="wallet" class="w-3.5 h-3.5"></i>
+                    TOTAL ASSETS
+                </span>
+            </div>
+            <div class="mt-2">
+                <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">총 매입 금액</p>
+                <div class="text-3xl font-black text-gray-900 dark:text-white tracking-tight mt-1">
+                    <span id="grand-total">******</span> <span class="text-lg font-bold text-gray-700 dark:text-gray-300">원</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 올해 손익 금액 섹션 -->
+        <div class="bg-white dark:bg-brand-cardDark border border-gray-200 dark:border-gray-800/80 rounded-3xl p-5 shadow-sm dark:shadow-xl flex flex-col space-y-3">
+            <div class="flex justify-between items-center">
+                <h3 class="text-sm font-bold flex items-center gap-1.5 text-gray-900 dark:text-white">
+                    <i data-lucide="coins" class="w-4 h-4 text-emerald-500"></i>
+                    올해 손익 금액
+                </h3>
+                <div class="flex items-center gap-1.5">
+                    <!-- 날짜 선택 네비게이션 -->
+                    <div class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-0.5 border border-gray-200 dark:border-gray-700">
+                        <button onclick="shiftYtdDate(-1)" class="p-1 text-gray-500 hover:text-gray-900 dark:hover:text-white"><i data-lucide="chevron-left" class="w-3.5 h-3.5"></i></button>
+                        <select id="ytdDateSelector" onchange="selectYtdDate(this.value)" class="bg-transparent text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none px-1 cursor-pointer">
+                            <!-- 동적 옵션 생성 -->
+                        </select>
+                        <button onclick="shiftYtdDate(1)" class="p-1 text-gray-500 hover:text-gray-900 dark:hover:text-white"><i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></button>
+                    </div>
+                    <button onclick="openYtdModal()" class="px-3 py-1 rounded-xl bg-blue-600 text-white font-semibold text-xs hover:bg-blue-700 transition flex items-center gap-1">
+                        <i data-lucide="pencil" class="w-3 h-3"></i>
+                        <span>Edit</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 총 손익 요약 박스 -->
+            <div class="bg-gray-50 dark:bg-gray-900/60 border border-gray-100 dark:border-gray-800 rounded-2xl p-3.5 flex justify-between items-center">
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">올해 누적 손익 합계</span>
+                <div class="text-base font-black">
+                    <span id="ytd-total-amount">0</span> <span class="text-xs font-bold text-gray-500 dark:text-gray-400">원</span>
+                </div>
+            </div>
+
+            <!-- 세부 항목 수치 요약 Grid -->
+            <div class="grid grid-cols-2 gap-2 text-xs">
+                <div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800/60">
+                    <span class="text-[10px] text-gray-400 block font-medium">확정손익</span>
+                    <span id="ytd-val-realized" class="font-bold">0원</span>
+                </div>
+                <div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800/60">
+                    <span class="text-[10px] text-gray-400 block font-medium">나무(CMA) 평가손익</span>
+                    <span id="ytd-val-namuCma" class="font-bold">0원</span>
+                </div>
+                <div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800/60">
+                    <span class="text-[10px] text-gray-400 block font-medium">나무(ISA) 평가손익</span>
+                    <span id="ytd-val-namuIsa" class="font-bold">0원</span>
+                </div>
+                <div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800/60">
+                    <span class="text-[10px] text-gray-400 block font-medium">미래(통합) 평가손익</span>
+                    <span id="ytd-val-mirae" class="font-bold">0원</span>
+                </div>
+            </div>
+
+            <!-- 올해 손익 가로 막대 그래프 영역 (날짜별 누적 합계 표시) -->
+            <div class="relative w-full h-[180px] pt-2">
+                <canvas id="ytdBarChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 3. 종목별 통합 보유 현황 카드 -->
+        <div class="bg-white dark:bg-brand-cardDark border border-gray-200 dark:border-gray-800/80 rounded-3xl p-5 shadow-sm dark:shadow-xl flex flex-col">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-sm font-bold flex items-center gap-1.5">
+                    <i data-lucide="pie-chart" class="w-4 h-4 text-emerald-500"></i>
+                    종목별 통합 현황
+                </h3>
+            </div>
+
+            <div class="overflow-hidden mb-4">
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="text-gray-400 border-b border-gray-100 dark:border-gray-800">
+                            <th class="pb-2 font-medium">종목명</th>
+                            <th class="pb-2 text-right font-medium">매입금액 (비중)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stock-summary-body" class="divide-y divide-gray-100 dark:divide-gray-800/60">
+                        <!-- 동적 생성 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 파이 차트 영역 -->
+            <div class="relative w-full pt-4 border-t border-gray-100 dark:border-gray-800/60 flex justify-center items-center overflow-visible">
+                <div class="w-64 h-64 relative">
+                    <canvas id="stockPieChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. 계좌별 상세 내역 카드 -->
+        <div class="bg-white dark:bg-brand-cardDark border border-gray-200 dark:border-gray-800/80 rounded-3xl p-5 shadow-sm dark:shadow-xl flex flex-col">
+            <div class="flex justify-between items-center mb-1.5">
+                <h3 class="text-sm font-bold flex items-center gap-1.5">
+                    <i data-lucide="landmark" class="w-4 h-4 text-purple-500"></i>
+                    계좌별 상세 내역
+                </h3>
+                <button id="editToggleBtn" onclick="toggleEditMode()" class="px-3 py-1 rounded-xl bg-blue-600 text-white font-semibold text-xs hover:bg-blue-700 transition flex items-center gap-1">
+                    <i data-lucide="pencil" class="w-3 h-3" id="editIcon"></i>
+                    <span id="editBtnText">Edit</span>
+                </button>
+            </div>
+            <p class="text-[10px] text-gray-400 mb-3">[Edit] 버튼으로 수정 가능하며, 항목 터치 시 정렬됩니다.</p>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="text-gray-400 border-b border-gray-100 dark:border-gray-800">
+                            <th class="pb-2 cursor-pointer hover:text-blue-500 transition select-none" onclick="sortTable(0)">계좌 ↕</th>
+                            <th class="pb-2 cursor-pointer hover:text-blue-500 transition select-none" onclick="sortTable(1)">종목 ↕</th>
+                            <th class="pb-2 text-right cursor-pointer hover:text-blue-500 transition select-none" onclick="sortTable(2)" id="table-header-amount">매입금액 (비중) ↕</th>
+                        </tr>
+                    </thead>
+                    <tbody id="account-table-body" class="divide-y divide-gray-100 dark:divide-gray-800/60">
+                        <!-- 동적 생성 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 5. 주식 평가금 트랜드 카드 -->
+        <div class="bg-white dark:bg-brand-cardDark border border-gray-200 dark:border-gray-800/80 rounded-3xl p-5 shadow-sm dark:shadow-xl flex flex-col">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="text-sm font-bold flex items-center gap-1.5 text-gray-900 dark:text-white">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4 text-indigo-500"></i>
+                    주식 평가금 트랜드
+                </h3>
+                <button id="trendEditToggleBtn" onclick="openTrendModal()" class="px-3 py-1 rounded-xl bg-blue-600 text-white font-semibold text-xs hover:bg-blue-700 transition flex items-center gap-1">
+                    <i data-lucide="pencil" class="w-3 h-3" id="trendEditIcon"></i>
+                    <span>Edit</span>
+                </button>
+            </div>
+
+            <!-- 메모 영역 -->
+            <div class="mb-3 bg-white dark:bg-brand-cardDark border border-amber-500/30 dark:border-amber-500/20 rounded-2xl p-4 shadow-sm flex flex-col">
+                <div class="flex justify-between items-center mb-1">
+                    <h4 class="text-xs font-bold flex items-center gap-1.5 text-gray-900 dark:text-white">
+                        <i data-lucide="file-text" class="w-3.5 h-3.5 text-amber-500"></i> 메모
+                    </h4>
+                    <button id="trendMemoEditBtn" onclick="toggleTrendMemoEdit()" class="px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-semibold text-[10px] hover:bg-amber-500/20 transition flex items-center gap-1">
+                        <i data-lucide="pencil" class="w-2.5 h-2.5" id="trendMemoEditIcon"></i>
+                        <span id="trendMemoEditBtnText">Edit</span>
+                    </button>
+                </div>
+                <div id="trendMemoView" class="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed font-medium"></div>
+                <textarea id="trendMemoEdit" onchange="updateTrendMemo(this.value)" class="hidden w-full text-xs p-2.5 mt-1 rounded-xl border border-amber-400 bg-amber-50/50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-amber-500 resize-y" rows="4"></textarea>
+            </div>
+
+            <!-- 트렌드 자산 상승 요약 카드 -->
+            <div class="mb-4 p-3.5 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-blue-500/10 border border-emerald-500/20 dark:border-emerald-500/30 rounded-2xl flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
+                        <i data-lucide="arrow-up-right" class="w-4 h-4 text-emerald-600 dark:text-emerald-400"></i>
+                    </div>
+                    <div>
+                        <span class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 block" id="trend-summary-range">누적 자산 성과</span>
+                        <span class="text-xs font-bold text-gray-800 dark:text-gray-200" id="trend-summary-desc">최초 대비 총 성과</span>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm font-black text-emerald-600 dark:text-emerald-400 tracking-tight" id="trend-summary-diff">+0원</div>
+                    <div class="text-[11px] font-bold text-emerald-600/80 dark:text-emerald-400/80" id="trend-summary-rate">+0.00%</div>
+                </div>
+            </div>
+
+            <!-- 가로 누적 막대 그래프 영역 -->
+            <div class="relative w-full h-[420px] mt-1">
+                <canvas id="trendBarChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 6. 누적 확정 손익 금액 카드 -->
+        <div class="bg-white dark:bg-brand-cardDark border border-gray-200 dark:border-gray-800/80 rounded-3xl p-5 shadow-sm dark:shadow-xl flex flex-col space-y-3">
+            <div class="flex justify-between items-center">
+                <h3 class="text-sm font-bold flex items-center gap-1.5 text-gray-900 dark:text-white">
+                    <i data-lucide="badge-dollar-sign" class="w-4 h-4 text-emerald-500"></i>
+                    누적 확정 손익 금액 (20년~현재)
+                </h3>
+                <button id="pnlEditToggleBtn" onclick="togglePnlEditMode()" class="px-3 py-1 rounded-xl bg-blue-600 text-white font-semibold text-xs hover:bg-blue-700 transition flex items-center gap-1">
+                    <i data-lucide="pencil" class="w-3 h-3" id="pnlEditIcon"></i>
+                    <span id="pnlEditBtnText">Edit</span>
+                </button>
+            </div>
+
+            <!-- 총 금액 합계액 박스 -->
+            <div class="bg-gray-50 dark:bg-gray-900/60 border border-gray-100 dark:border-gray-800 rounded-2xl p-3.5 flex justify-between items-center">
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">전체 확정 손익 합계</span>
+                <div class="text-base font-black text-gray-900 dark:text-white">
+                    <span id="pnl-grand-total">0</span> <span class="text-xs font-bold text-gray-500">원</span>
+                </div>
+            </div>
+
+            <!-- 편집 모드용 테이블 -->
+            <div id="pnlEditContainer" class="hidden overflow-x-auto space-y-2 pt-2">
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="text-gray-400 border-b border-gray-100 dark:border-gray-800">
+                            <th class="pb-1 font-medium">연도</th>
+                            <th class="pb-1 font-medium">계좌명</th>
+                            <th class="pb-1 text-right font-medium">확정손익 (원)</th>
+                            <th class="pb-1 text-center font-medium w-10">삭제</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pnl-edit-tbody" class="divide-y divide-gray-100 dark:divide-gray-800/60">
+                        <!-- 동적 생성 -->
+                    </tbody>
+                </table>
+                <button type="button" onclick="addPnlRow()" class="w-full py-1.5 rounded-xl border border-dashed border-blue-300 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 text-xs font-semibold flex items-center justify-center gap-1 transition">
+                    <i data-lucide="plus" class="w-3 h-3"></i>
+                    <span>내역 추가</span>
+                </button>
+            </div>
+
+            <!-- 확정 손익 바 차트 영역 -->
+            <div class="relative w-full h-[320px] mt-1">
+                <canvas id="pnlBarChart"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 올해 손익 관리 모달 -->
+    <div id="ytdModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-brand-cardDark border border-gray-200 dark:border-gray-800 rounded-3xl p-5 w-full max-w-sm shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center shrink-0">
+                <h4 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                    <i data-lucide="coins" class="w-4 h-4 text-emerald-500"></i>
+                    올해 손익 데이터 관리
+                </h4>
+                <button onclick="closeYtdModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="overflow-y-auto space-y-3 pr-1 flex-1">
+                <div class="p-3 bg-gray-50 dark:bg-gray-900/60 rounded-2xl border border-gray-100 dark:border-gray-800 space-y-2">
+                    <h5 class="text-xs font-bold text-blue-600 dark:text-blue-400">신규/수정 항목 입력</h5>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-gray-500 mb-1">날짜 (예: 26.07.30)</label>
+                        <input type="text" id="inputYtdDate" placeholder="26.07.30" class="w-full bg-white dark:bg-gray-800 p-2 text-xs rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:border-blue-500 font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-gray-500 mb-1">확정손익 (원)</label>
+                        <input type="number" id="inputYtdRealized" placeholder="0" class="w-full bg-white dark:bg-gray-800 p-2 text-xs rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:border-blue-500 font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-gray-500 mb-1">나무 (CMA) 평가손익 (원)</label>
+                        <input type="number" id="inputYtdNamuCma" placeholder="0" class="w-full bg-white dark:bg-gray-800 p-2 text-xs rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:border-blue-500 font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-gray-500 mb-1">나무 (ISA) 평가손익 (원)</label>
+                        <input type="number" id="inputYtdNamuIsa" placeholder="0" class="w-full bg-white dark:bg-gray-800 p-2 text-xs rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:border-blue-500 font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-gray-500 mb-1">미래(통합) 평가손익 (원)</label>
+                        <input type="number" id="inputYtdMirae" placeholder="0" class="w-full bg-white dark:bg-gray-800 p-2 text-xs rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:border-blue-500 font-medium">
+                    </div>
+                    <button onclick="saveYtdRecord()" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition mt-1">
+                        저장하기
+                    </button>
+                </div>
+
+                <div class="space-y-1.5 pt-2">
+                    <h5 class="text-xs font-bold text-gray-700 dark:text-gray-300">저장된 날짜 목록</h5>
+                    <div id="ytdHistoryList" class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                        <!-- 목록 동적 생성 -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-2 border-t border-gray-100 dark:border-gray-800 shrink-0">
+                <button onclick="closeYtdModal()" class="w-full py-2 rounded-xl bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium text-xs">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 트랜드 내역 추가 모달 -->
+    <div id="trendModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-brand-cardDark border border-gray-200 dark:border-gray-800 rounded-3xl p-5 w-full max-w-sm shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center shrink-0">
+                <h4 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                    <i data-lucide="plus-circle" class="w-4 h-4 text-indigo-500"></i>
+                    트랜드 내역 일괄 추가
+                </h4>
+                <button onclick="closeTrendModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="overflow-y-auto space-y-3 pr-1 flex-1">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">날짜 (공통)</label>
+                    <input type="text" id="inputTrendDate" placeholder="예: 26.08.15" class="w-full bg-gray-100 dark:bg-gray-800 p-2 text-xs rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:border-indigo-500 font-medium">
+                </div>
+
+                <hr class="border-gray-100 dark:border-gray-800">
+
+                <div id="accountRowsContainer" class="space-y-3"></div>
+
+                <button type="button" onclick="addAccountRow()" class="w-full py-2 rounded-xl border border-dashed border-indigo-300 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-xs font-semibold flex items-center justify-center gap-1 transition">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                    <span>항목 추가</span>
+                </button>
+            </div>
+
+            <div class="flex gap-2 pt-2 border-t border-gray-100 dark:border-gray-800 shrink-0">
+                <button onclick="closeTrendModal()" class="w-1/2 py-2 rounded-xl bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium text-xs">취소</button>
+                <button onclick="saveTrendRecord()" class="w-1/2 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-xs">저장하기</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        Chart.register(ChartDataLabels);
+
+        const STORAGE_KEY = 'my_stock_assets_app_data_v1';
+
+        let sortDirections = [true, true, true];
+        let isMasked = false; 
+        let secretKey = "0713"; 
+        let isEditMode = false;
+        let isPnlEditMode = false;
+        let isTrendMemoEditMode = false;
+        let isTopMemoEditMode = false;
+
+        let pieChart = null;
+        let trendChart = null;
+        let pnlChart = null;
+        let ytdChart = null;
+
+        const defaultTrendMemoText = `3/6 : 1억 추가\n5/31 : 주식보상 30주 추가\n6/25 : 1000만원 추가\n7/12 : 주식보상 22주 추가`;
+
+        const defaultAccountDataList = [
+            { account: "나무(CMA)", stock: "하이닉스 밸류체인 ETF", amount: 74944150 },
+            { account: "나무(ISA)", stock: "하이닉스 밸류체인 ETF", amount: 25743575 },
+            { account: "미래(CMA)", stock: "하이닉스 밸류체인 ETF", amount: 13245190 },
+            { account: "미래(ISA)", stock: "하이닉스 밸류체인 ETF", amount: 231700 },
+            { account: "미래(CMA)", stock: "삼성전자", amount: 24971300 },
+            { account: "미래(ISA)", stock: "삼성전자", amount: 20103400 },
+            { account: "나무(CMA)", stock: "삼성전자", amount: 136301000 },
+            { account: "나무(ISA)", stock: "삼성전자", amount: 50771100 },
+            { account: "삼성증권", stock: "삼성전자", amount: 7746000 },
+            { account: "미래 (ISA)", stock: "삼성전자우", amount: 22968800 },
+            { account: "미래(CMA)", stock: "삼성전자우", amount: 23678800 },
+            { account: "나무(CMA)", stock: "삼성전자우", amount: 41437000 },
+            { account: "나무(CMA)", stock: "삼성전자레버리지", amount: 59083615 },
+            { account: "나무(CMA)", stock: "하이닉스레버리지", amount: 61601485 },
+            { account: "나무(CMA)", stock: "TIGER200IT레버리지", amount: 31554710 },
+            { account: "나무(CMA)", stock: "오로스테크놀로지", amount: 60291000 },
+            { account: "나무(CMA)", stock: "테크윙", amount: 49511500 },
+            { account: "나무(ISA)", stock: "디앤디파마텍", amount: 31307300 },
+            { account: "나무(CMA)", stock: "디앤디파마텍", amount: 40923900 },
+            { account: "나무(CMA)", stock: "현금", amount: 0 },
+            { account: "나무(ISA)", stock: "현금", amount: 0 },
+            { account: "미래(CMA)", stock: "현금", amount: 0 }
+        ];
+
+        const defaultTrendRawData = [
+            { date: '26.02.08', account: '나무(CMA)', amount: 388326139 },
+            { date: '26.02.08', account: '나무(ISA)', amount: 108938392 },
+            { date: '26.02.08', account: '미래(통합)', amount: 197217402 },
+            { date: '26.03.06', account: '나무(CMA)', amount: 527553375 },
+            { date: '26.03.06', account: '나무(ISA)', amount: 119398858 },
+            { date: '26.03.06', account: '미래(통합)', amount: 216390179 },
+            { date: '26.04.17', account: '나무(CMA)', amount: 642687983 },
+            { date: '26.04.17', account: '나무(ISA)', amount: 134916276 },
+            { date: '26.04.17', account: '미래(통합)', amount: 253555777 },
+            { date: '26.05.04', account: '나무(CMA)', amount: 729492462 },
+            { date: '26.05.04', account: '나무(ISA)', amount: 146602212 },
+            { date: '26.05.04', account: '미래(통합)', amount: 271490310 },
+            { date: '26.05.31', account: '나무(CMA)', amount: 782153215 },
+            { date: '26.05.31', account: '나무(ISA)', amount: 186165908 },
+            { date: '26.05.31', account: '미래(통합)', amount: 352934530 },
+            { date: '26.05.31', account: '삼성증권', amount: 9555000 },
+            { date: '26.06.08', account: '나무(CMA)', amount: 694119704 },
+            { date: '26.06.08', account: '나무(ISA)', amount: 169065740 },
+            { date: '26.06.08', account: '미래(통합)', amount: 332260962 },
+            { date: '26.06.08', account: '삼성증권', amount: 9045000 },
+            { date: '26.06.19', account: '나무(CMA)', amount: 889401974 },
+            { date: '26.06.19', account: '나무(ISA)', amount: 215442367 },
+            { date: '26.06.19', account: '미래(통합)', amount: 392231108 },
+            { date: '26.06.19', account: '삼성증권', amount: 10515000 },
+            { date: '26.06.25', account: '나무(CMA)', amount: 878112578 },
+            { date: '26.06.25', account: '나무(ISA)', amount: 207978469 },
+            { date: '26.06.25', account: '미래(통합)', amount: 403441629 },
+            { date: '26.06.25', account: '삼성증권', amount: 10785000 },
+            { date: '26.07.12', account: '나무(CMA)', amount: 680697655 },
+            { date: '26.07.12', account: '나무(ISA)', amount: 174504343 },
+            { date: '26.07.12', account: '미래(통합)', amount: 325533171 },
+            { date: '26.07.12', account: '삼성증권', amount: 14898000 },
+            { date: '26.07.19', account: '나무(CMA)', amount: 599307574 },
+            { date: '26.07.19', account: '나무(ISA)', amount: 154723415 },
+            { date: '26.07.19', account: '미래(통합)', amount: 289337503 },
+            { date: '26.07.19', account: '삼성증권', amount: 13182000 },
+            { date: '26.07.25', account: '나무(CMA)', amount: 557392149 },
+            { date: '26.07.25', account: '나무(ISA)', amount: 144412212 },
+            { date: '26.07.25', account: '미래(통합)', amount: 285985526 },
+            { date: '26.07.25', account: '삼성증권', amount: 13043455 }
+        ];
+
+        const defaultPnlDataList = [
+            { year: '2020년', account: '나무(CMA)', amount: 10693877 },
+            { year: '2021년', account: '나무(CMA)', amount: 62980627 },
+            { year: '2022년', account: '나무(CMA)', amount: 9137431 },
+            { year: '2022년', account: '나무(ISA)', amount: 2696592 },
+            { year: '2023년', account: '나무(CMA)', amount: -37294156 },
+            { year: '2023년', account: '나무(ISA)', amount: -1983498 },
+            { year: '2024년', account: '나무(CMA)', amount: 80110998 },
+            { year: '2024년', account: '나무(ISA)', amount: 18434616 },
+            { year: '2025년', account: '나무(CMA)', amount: -16285714 },
+            { year: '2025년', account: '나무(ISA)', amount: -14453041 },
+            { year: '2025년', account: '미래(ISA)', amount: 27915 },
+            { year: '2026년', account: '나무(CMA)', amount: 127127250 },
+            { year: '2026년', account: '나무(ISA)', amount: 6768994 },
+            { year: '2026년', account: '미래(ISA)', amount: -20869767 }
+        ];
+
+        const defaultYtdDataList = [
+            {
+                date: '26.07.30',
+                realized: 113026477,
+                namuCma: -137370044,
+                namuIsa: 5251616,
+                mirae: 133595271
+            }
+        ];
+
+        const defaultTopMemoConfig = {
+            text: '',
+            fontSize: '14px',
+            color: '#1f2937',
+            isBold: false,
+            isItalic: false,
+            isUnderline: false,
+            align: 'left'
+        };
+
+        let topMemoConfig = { ...defaultTopMemoConfig };
+        let trendMemoText = defaultTrendMemoText;
+        let accountDataList = [];
+        let trendRawData = [];
+        let pnlDataList = [];
+        let ytdDataList = [];
+        let selectedYtdDate = '26.07.30';
+
+        function saveAllToLocalStorage() {
+            const stateObj = {
+                topMemoConfig,
+                trendMemoText,
+                accountDataList,
+                trendRawData,
+                pnlDataList,
+                ytdDataList
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(stateObj));
+        }
+
+        function loadFromLocalStorage() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                try {
+                    const parsed = JSON.parse(stored);
+                    topMemoConfig = parsed.topMemoConfig || { ...defaultTopMemoConfig };
+                    trendMemoText = parsed.trendMemoText ?? defaultTrendMemoText;
+                    accountDataList = parsed.accountDataList || JSON.parse(JSON.stringify(defaultAccountDataList));
+                    trendRawData = parsed.trendRawData || JSON.parse(JSON.stringify(defaultTrendRawData));
+                    pnlDataList = parsed.pnlDataList || JSON.parse(JSON.stringify(defaultPnlDataList));
+                    ytdDataList = parsed.ytdDataList || JSON.parse(JSON.stringify(defaultYtdDataList));
+
+                    if (ytdDataList.length > 0) {
+                        selectedYtdDate = ytdDataList[ytdDataList.length - 1].date;
+                    }
+                    return;
+                } catch(e) {
+                    console.error("Failed to parse localStorage data", e);
+                }
+            }
+
+            topMemoConfig = { ...defaultTopMemoConfig };
+            trendMemoText = defaultTrendMemoText;
+            accountDataList = JSON.parse(JSON.stringify(defaultAccountDataList));
+            trendRawData = JSON.parse(JSON.stringify(defaultTrendRawData));
+            pnlDataList = JSON.parse(JSON.stringify(defaultPnlDataList));
+            ytdDataList = JSON.parse(JSON.stringify(defaultYtdDataList));
+            selectedYtdDate = '26.07.30';
+        }
+
+        /* --- 상단 메모 토글 및 서식 제어 함수 --- */
+        function initTopMemoUI() {
+            const viewElem = document.getElementById("topMemoView");
+            const textarea = document.getElementById("topMemoTextarea");
+            const selectSize = document.getElementById("memoFontSize");
+            const inputColor = document.getElementById("memoColor");
+
+            textarea.value = topMemoConfig.text || "";
+            viewElem.innerText = topMemoConfig.text || "";
+
+            selectSize.value = topMemoConfig.fontSize || "14px";
+            inputColor.value = topMemoConfig.color || "#1f2937";
+
+            applyMemoStyleToDOM();
+        }
+
+        function toggleTopMemoEdit() {
+            isTopMemoEditMode = !isTopMemoEditMode;
+
+            const btnText = document.getElementById("topMemoBtnText");
+            const btnIcon = document.getElementById("topMemoBtnIcon");
+            const toolbar = document.getElementById("topMemoToolbar");
+            const viewElem = document.getElementById("topMemoView");
+            const textarea = document.getElementById("topMemoTextarea");
+
+            if (isTopMemoEditMode) {
+                // 편집 모드 전환
+                btnText.innerText = "Done";
+                btnIcon.setAttribute("data-lucide", "check");
+                toolbar.classList.remove("hidden");
+                textarea.classList.remove("hidden");
+                viewElem.classList.add("hidden");
+                textarea.value = topMemoConfig.text;
+            } else {
+                // 저장 및 뷰 모드 전환
+                topMemoConfig.text = textarea.value;
+                viewElem.innerText = textarea.value;
+
+                btnText.innerText = "Edit";
+                btnIcon.setAttribute("data-lucide", "pencil");
+                toolbar.classList.add("hidden");
+                textarea.classList.add("hidden");
+                viewElem.classList.remove("hidden");
+
+                saveAllToLocalStorage();
+            }
+            lucide.createIcons();
+        }
+
+        function applyMemoStyle() {
+            const selectSize = document.getElementById("memoFontSize");
+            const inputColor = document.getElementById("memoColor");
+
+            topMemoConfig.fontSize = selectSize.value;
+            topMemoConfig.color = inputColor.value;
+
+            applyMemoStyleToDOM();
+            saveAllToLocalStorage();
+        }
+
+        function toggleStyleState(styleType) {
+            if (styleType === 'bold') topMemoConfig.isBold = !topMemoConfig.isBold;
+            if (styleType === 'italic') topMemoConfig.isItalic = !topMemoConfig.isItalic;
+            if (styleType === 'underline') topMemoConfig.isUnderline = !topMemoConfig.isUnderline;
+
+            applyMemoStyleToDOM();
+            saveAllToLocalStorage();
+        }
+
+        function setMemoAlign(align) {
+            topMemoConfig.align = align;
+            applyMemoStyleToDOM();
+            saveAllToLocalStorage();
+        }
+
+        function applyMemoStyleToDOM() {
+            const textarea = document.getElementById("topMemoTextarea");
+            const viewElem = document.getElementById("topMemoView");
+
+            [textarea, viewElem].forEach(elem => {
+                if (!elem) return;
+                elem.style.fontSize = topMemoConfig.fontSize;
+                elem.style.color = topMemoConfig.color;
+                elem.style.fontWeight = topMemoConfig.isBold ? 'bold' : 'normal';
+                elem.style.fontStyle = topMemoConfig.isItalic ? 'italic' : 'normal';
+                elem.style.textDecoration = topMemoConfig.isUnderline ? 'underline' : 'none';
+                elem.style.textAlign = topMemoConfig.align;
+            });
+
+            updateToolbarButton('btnBold', topMemoConfig.isBold);
+            updateToolbarButton('btnItalic', topMemoConfig.isItalic);
+            updateToolbarButton('btnUnderline', topMemoConfig.isUnderline);
+
+            updateToolbarButton('btnAlignLeft', topMemoConfig.align === 'left');
+            updateToolbarButton('btnAlignCenter', topMemoConfig.align === 'center');
+            updateToolbarButton('btnAlignRight', topMemoConfig.align === 'right');
+        }
+
+        function updateToolbarButton(btnId, isActive) {
+            const btn = document.getElementById(btnId);
+            if (!btn) return;
+            if (isActive) {
+                btn.classList.add("bg-amber-100", "dark:bg-amber-900/50", "text-amber-700", "dark:text-amber-300", "border-amber-300");
+            } else {
+                btn.classList.remove("bg-amber-100", "dark:bg-amber-900/50", "text-amber-700", "dark:text-amber-300", "border-amber-300");
+            }
+        }
+
+        const stockColorMap = {
+            'TIGER200IT레버리지': '#007aff',
+            '테크윙': '#374151'
+        };
+
+        const accountColorPalette = [
+            '#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#14b8a6'
+        ];
+
+        const defaultChartColors = [
+            '#34c759', '#af52de', '#ff9500', '#ff3b30', '#5856d6', '#5ac8fa', '#059669', '#d946ef'
+        ];
+
+        function getStockColor(stockName, index) {
+            const cleanName = stockName.replace(/^\d+\.\s*/, '').trim();
+            if (stockColorMap[cleanName]) return stockColorMap[cleanName];
+            if (stockColorMap[stockName]) return stockColorMap[stockName];
+            return defaultChartColors[index % defaultChartColors.length];
+        }
+
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            renderApp();
+        }
+
+        function toggleMask() {
+            if (isMasked) {
+                const inputPassword = prompt("비밀번호를 입력하세요:");
+                if (!inputPassword) return;
+
+                if (inputPassword === secretKey) {
+                    isMasked = false;
+                } else {
+                    alert("비밀번호가 올바르지 않습니다.");
+                    return;
+                }
+            } else {
+                isMasked = true;
+            }
+
+            const maskIcon = document.getElementById("maskIcon");
+
+            if (isMasked) {
+                maskIcon.setAttribute("data-lucide", "eye-off");
+                maskIcon.className = "w-4 h-4 text-gray-500 dark:text-gray-400";
+            } else {
+                maskIcon.setAttribute("data-lucide", "eye");
+                maskIcon.className = "w-4 h-4 text-blue-500 dark:text-blue-400";
+            }
+            renderApp();
+        }
+
+        function updateTrendMemo(val) {
+            trendMemoText = val;
+            document.getElementById("trendMemoView").innerText = val;
+            saveAllToLocalStorage();
+        }
+
+        function toggleTrendMemoEdit() {
+            isTrendMemoEditMode = !isTrendMemoEditMode;
+            const btnText = document.getElementById("trendMemoEditBtnText");
+            const icon = document.getElementById("trendMemoEditIcon");
+            const view = document.getElementById("trendMemoView");
+            const edit = document.getElementById("trendMemoEdit");
+
+            if (isTrendMemoEditMode) {
+                btnText.innerText = "Done";
+                icon.setAttribute("data-lucide", "check");
+                view.classList.add("hidden");
+                edit.classList.remove("hidden");
+                edit.value = trendMemoText;
+            } else {
+                btnText.innerText = "Edit";
+                icon.setAttribute("data-lucide", "pencil");
+                view.classList.remove("hidden");
+                edit.classList.add("hidden");
+                view.innerText = trendMemoText;
+                saveAllToLocalStorage();
+            }
+            lucide.createIcons();
+        }
+
+        function toggleEditMode() {
+            isEditMode = !isEditMode;
+            const btn = document.getElementById("editToggleBtn");
+            const editBtnText = document.getElementById("editBtnText");
+            const editIcon = document.getElementById("editIcon");
+            const amountHeader = document.getElementById("table-header-amount");
+
+            if (isEditMode) {
+                editBtnText.innerText = "Done";
+                editIcon.setAttribute("data-lucide", "check");
+                btn.className = "px-3 py-1 rounded-xl bg-emerald-600 text-white font-semibold text-xs hover:bg-emerald-700 transition flex items-center gap-1";
+                amountHeader.innerText = "매입금액 ↕";
+            } else {
+                editBtnText.innerText = "Edit";
+                editIcon.setAttribute("data-lucide", "pencil");
+                btn.className = "px-3 py-1 rounded-xl bg-blue-600 text-white font-semibold text-xs hover:bg-blue-700 transition flex items-center gap-1";
+                amountHeader.innerText = "매입금액 (비중) ↕";
+                saveAllToLocalStorage();
+            }
+            renderApp();
+        }
+
+        function togglePnlEditMode() {
+            isPnlEditMode = !isPnlEditMode;
+            const btn = document.getElementById("pnlEditToggleBtn");
+            const btnText = document.getElementById("pnlEditBtnText");
+            const editIcon = document.getElementById("pnlEditIcon");
+            const container = document.getElementById("pnlEditContainer");
+
+            if (isPnlEditMode) {
+                btnText.innerText = "Done";
+                editIcon.setAttribute("data-lucide", "check");
+                btn.className = "px-3 py-1 rounded-xl bg-emerald-600 text-white font-semibold text-xs hover:bg-emerald-700 transition flex items-center gap-1";
+                container.classList.remove("hidden");
+                renderPnlEditTable();
+            } else {
+                btnText.innerText = "Edit";
+                editIcon.setAttribute("data-lucide", "pencil");
+                btn.className = "px-3 py-1 rounded-xl bg-blue-600 text-white font-semibold text-xs hover:bg-blue-700 transition flex items-center gap-1";
+                container.classList.add("hidden");
+                saveAllToLocalStorage();
+            }
+            renderApp();
+        }
+
+        function renderPnlEditTable() {
+            const tbody = document.getElementById("pnl-edit-tbody");
+            tbody.innerHTML = "";
+            pnlDataList.forEach((item, index) => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td class="py-1.5 pr-1"><input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 text-xs font-medium" value="${item.year}" onchange="updatePnlItem(${index}, 'year', this.value)"></td>
+                    <td class="py-1.5 px-1"><input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 text-xs font-medium" value="${item.account}" onchange="updatePnlItem(${index}, 'account', this.value)"></td>
+                    <td class="py-1.5 px-1"><input type="number" class="w-full text-right bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 text-xs font-medium" value="${item.amount}" onchange="updatePnlItem(${index}, 'amount', this.value)"></td>
+                    <td class="py-1.5 pl-1 text-center"><button type="button" onclick="deletePnlItem(${index})" class="text-gray-400 hover:text-red-500 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+            lucide.createIcons();
+        }
+
+        function updatePnlItem(index, key, value) {
+            if (key === 'year' || key === 'account') {
+                pnlDataList[index][key] = value.trim();
+            } else {
+                pnlDataList[index].amount = Number(value) || 0;
+            }
+            saveAllToLocalStorage();
+            renderApp();
+        }
+
+        function deletePnlItem(index) {
+            pnlDataList.splice(index, 1);
+            saveAllToLocalStorage();
+            renderPnlEditTable();
+            renderApp();
+        }
+
+        function addPnlRow() {
+            pnlDataList.push({ year: '2026년', account: '나무(CMA)', amount: 0 });
+            saveAllToLocalStorage();
+            renderPnlEditTable();
+            renderApp();
+        }
+
+        /* --- 올해 손익 금액 관련 함수 --- */
+        function openYtdModal() {
+            document.getElementById("inputYtdDate").value = selectedYtdDate || "26.07.30";
+            const currentObj = ytdDataList.find(item => item.date === selectedYtdDate) || ytdDataList[ytdDataList.length - 1];
+            
+            if (currentObj) {
+                document.getElementById("inputYtdRealized").value = currentObj.realized;
+                document.getElementById("inputYtdNamuCma").value = currentObj.namuCma;
+                document.getElementById("inputYtdNamuIsa").value = currentObj.namuIsa;
+                document.getElementById("inputYtdMirae").value = currentObj.mirae;
+            } else {
+                document.getElementById("inputYtdRealized").value = 113026477;
+                document.getElementById("inputYtdNamuCma").value = -137370044;
+                document.getElementById("inputYtdNamuIsa").value = 5251616;
+                document.getElementById("inputYtdMirae").value = 133595271;
+            }
+
+            renderYtdHistoryList();
+            document.getElementById("ytdModal").classList.remove("hidden");
+            lucide.createIcons();
+        }
+
+        function closeYtdModal() {
+            document.getElementById("ytdModal").classList.add("hidden");
+        }
+
+        function renderYtdHistoryList() {
+            const listContainer = document.getElementById("ytdHistoryList");
+            listContainer.innerHTML = "";
+            ytdDataList.forEach((item, index) => {
+                const div = document.createElement("div");
+                div.className = "flex items-center justify-between p-2 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-xs";
+                div.innerHTML = `
+                    <span class="font-bold text-gray-700 dark:text-gray-300">${item.date}</span>
+                    <div class="flex items-center gap-2">
+                        <button onclick="editYtdFromList('${item.date}')" class="text-blue-500 hover:underline font-medium text-[11px]">수정</button>
+                        <button onclick="deleteYtdRecord(${index})" class="text-red-500 hover:text-red-700 p-0.5"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                    </div>
+                `;
+                listContainer.appendChild(div);
+            });
+            lucide.createIcons();
+        }
+
+        function editYtdFromList(dateStr) {
+            const item = ytdDataList.find(d => d.date === dateStr);
+            if (item) {
+                document.getElementById("inputYtdDate").value = item.date;
+                document.getElementById("inputYtdRealized").value = item.realized;
+                document.getElementById("inputYtdNamuCma").value = item.namuCma;
+                document.getElementById("inputYtdNamuIsa").value = item.namuIsa;
+                document.getElementById("inputYtdMirae").value = item.mirae;
+            }
+        }
+
+        function saveYtdRecord() {
+            const date = document.getElementById("inputYtdDate").value.trim();
+            if (!date) {
+                alert("날짜를 입력해주세요.");
+                return;
+            }
+
+            const realized = Number(document.getElementById("inputYtdRealized").value) || 0;
+            const namuCma = Number(document.getElementById("inputYtdNamuCma").value) || 0;
+            const namuIsa = Number(document.getElementById("inputYtdNamuIsa").value) || 0;
+            const mirae = Number(document.getElementById("inputYtdMirae").value) || 0;
+
+            const existingIdx = ytdDataList.findIndex(item => item.date === date);
+            const newRecord = { date, realized, namuCma, namuIsa, mirae };
+
+            if (existingIdx >= 0) {
+                ytdDataList[existingIdx] = newRecord;
+            } else {
+                ytdDataList.push(newRecord);
+            }
+
+            selectedYtdDate = date;
+            saveAllToLocalStorage();
+            closeYtdModal();
+            renderApp();
+        }
+
+        function deleteYtdRecord(index) {
+            if (ytdDataList.length <= 1) {
+                alert("최소 1개 이상의 손익 데이터가 필요합니다.");
+                return;
+            }
+            ytdDataList.splice(index, 1);
+            if (!ytdDataList.find(item => item.date === selectedYtdDate)) {
+                selectedYtdDate = ytdDataList[ytdDataList.length - 1].date;
+            }
+            saveAllToLocalStorage();
+            renderYtdHistoryList();
+            renderApp();
+        }
+
+        function shiftYtdDate(direction) {
+            if (ytdDataList.length === 0) return;
+            const currentIdx = ytdDataList.findIndex(item => item.date === selectedYtdDate);
+            let nextIdx = currentIdx + direction;
+            if (nextIdx < 0) nextIdx = 0;
+            if (nextIdx >= ytdDataList.length) nextIdx = ytdDataList.length - 1;
+            selectedYtdDate = ytdDataList[nextIdx].date;
+            renderApp();
+        }
+
+        function selectYtdDate(dateVal) {
+            selectedYtdDate = dateVal;
+            renderApp();
+        }
+
+        function formatPnlText(elemId, value) {
+            const elem = document.getElementById(elemId);
+            if (!elem) return;
+            
+            if (isMasked) {
+                elem.innerText = "******원";
+                elem.className = "font-bold text-gray-800 dark:text-gray-200";
+                return;
+            }
+
+            const prefix = value > 0 ? "+" : "";
+            elem.innerText = `${prefix}${value.toLocaleString()}원`;
+
+            if (value > 0) {
+                elem.className = "font-bold text-red-500 dark:text-red-400";
+            } else if (value < 0) {
+                elem.className = "font-bold text-blue-500 dark:text-blue-400";
+            } else {
+                elem.className = "font-bold text-gray-800 dark:text-gray-200";
+            }
+        }
+
+        function updateYtdChartAndSummary() {
+            const selector = document.getElementById("ytdDateSelector");
+            selector.innerHTML = "";
+            ytdDataList.forEach(item => {
+                const opt = document.createElement("option");
+                opt.value = item.date;
+                opt.innerText = item.date;
+                if (item.date === selectedYtdDate) opt.selected = true;
+                selector.appendChild(opt);
+            });
+
+            const activeData = ytdDataList.find(item => item.date === selectedYtdDate) || ytdDataList[ytdDataList.length - 1];
+
+            if (!activeData) return;
+
+            const activeTotal = activeData.realized + activeData.namuCma + activeData.namuIsa + activeData.mirae;
+
+            formatPnlText("ytd-total-amount", activeTotal);
+            formatPnlText("ytd-val-realized", activeData.realized);
+            formatPnlText("ytd-val-namuCma", activeData.namuCma);
+            formatPnlText("ytd-val-namuIsa", activeData.namuIsa);
+            formatPnlText("ytd-val-mirae", activeData.mirae);
+
+            const dates = ytdDataList.map(item => item.date);
+            const totals = ytdDataList.map(item => item.realized + item.namuCma + item.namuIsa + item.mirae);
+            const barColors = totals.map(val => val < 0 ? '#3b82f6' : '#ef4444');
+
+            if (ytdChart) {
+                ytdChart.destroy();
+            }
+
+            const ctx = document.getElementById('ytdBarChart').getContext('2d');
+            ytdChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        data: totals,
+                        backgroundColor: barColors,
+                        borderRadius: 4,
+                        barThickness: 18
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: { right: 85 } },
+                    scales: {
+                        x: { display: false, grid: { display: false } },
+                        y: {
+                            grid: { display: false },
+                            ticks: {
+                                font: { size: 10, weight: '600' },
+                                color: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#4b5563'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let rawVal = context.raw || 0;
+                                    let valText = isMasked ? '******' : rawVal.toLocaleString() + '원';
+                                    return `누적 손익: ${valText}`;
+                                }
+                            }
+                        },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'end',
+                            formatter: function(value) {
+                                if (isMasked) return '******';
+                                let absVal = Math.abs(value);
+                                let sign = value < 0 ? '-' : (value > 0 ? '+' : '');
+                                
+                                if (absVal >= 100000000) {
+                                    let eokVal = (absVal / 100000000).toFixed(2);
+                                    return `${sign}${eokVal}억`;
+                                } else {
+                                    let manVal = (absVal / 10000).toFixed(1);
+                                    return `${sign}${manVal}만`;
+                                }
+                            },
+                            backgroundColor: '#000000',
+                            color: function(context) {
+                                let val = context.dataset.data[context.dataIndex];
+                                return val < 0 ? '#60a5fa' : '#ff6b6b';
+                            },
+                            borderRadius: 4,
+                            padding: { top: 2, bottom: 2, left: 5, right: 5 },
+                            font: { size: 9.5, weight: 'bold' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function openTrendModal() {
+            const container = document.getElementById("accountRowsContainer");
+            container.innerHTML = "";
+            
+            const defaultAccounts = ["나무(CMA)", "나무(ISA)", "미래(통합)", "삼성증권"];
+            defaultAccounts.forEach(acc => addAccountRow(acc));
+
+            document.getElementById("inputTrendDate").value = "";
+            document.getElementById("trendModal").classList.remove("hidden");
+            lucide.createIcons();
+        }
+
+        function closeTrendModal() {
+            document.getElementById("trendModal").classList.add("hidden");
+        }
+
+        function addAccountRow(defaultAccName = "") {
+            const container = document.getElementById("accountRowsContainer");
+            const div = document.createElement("div");
+            div.className = "p-2.5 rounded-2xl bg-gray-50 dark:bg-gray-900/60 border border-gray-100 dark:border-gray-800 space-y-1.5 relative group";
+
+            div.innerHTML = `
+                <div class="flex items-center justify-between gap-2">
+                    <input type="text" placeholder="계좌명" value="${defaultAccName}" class="input-acc w-1/2 bg-white dark:bg-gray-800 p-2 text-xs rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:border-indigo-500 font-medium">
+                    <input type="number" placeholder="평가금액 (원)" class="input-amt w-1/2 bg-white dark:bg-gray-800 p-2 text-xs rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:border-indigo-500 font-medium">
+                    <button type="button" onclick="this.parentElement.parentElement.remove()" class="text-gray-400 hover:text-red-500 p-1">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(div);
+            lucide.createIcons();
+        }
+
+        function saveTrendRecord() {
+            const date = document.getElementById("inputTrendDate").value.trim();
+            if (!date) {
+                alert("날짜를 입력해주세요.");
+                return;
+            }
+
+            const accInputs = document.querySelectorAll(".input-acc");
+            const amtInputs = document.querySelectorAll(".input-amt");
+
+            let addedCount = 0;
+            accInputs.forEach((accElem, idx) => {
+                const account = accElem.value.trim();
+                const amountVal = amtInputs[idx].value;
+                const amount = Number(amountVal);
+
+                if (account && amountVal !== "" && !isNaN(amount)) {
+                    trendRawData.push({ date, account, amount });
+                    addedCount++;
+                }
+            });
+
+            if (addedCount === 0) {
+                alert("적어도 하나의 유효한 계좌와 금액을 입력해주세요.");
+                return;
+            }
+
+            saveAllToLocalStorage();
+            closeTrendModal();
+            renderApp();
+        }
+
+        function chunkText(text, length) {
+            let result = [];
+            for (let i = 0; i < text.length; i += length) {
+                result.push(text.substring(i, i + length));
+            }
+            return result.join('\n');
+        }
+
+        function updateChart(sortedStocks, grandTotal) {
+            const labels = sortedStocks.map(item => item[0]);
+            const dataValues = sortedStocks.map(item => item[1]);
+            const backgroundColors = sortedStocks.map((item, idx) => getStockColor(item[0], idx));
+
+            if (pieChart) {
+                pieChart.destroy();
+            }
+
+            const ctx = document.getElementById('stockPieChart').getContext('2d');
+            pieChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: dataValues,
+                        backgroundColor: backgroundColors,
+                        borderWidth: 0,
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '42.5%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let stockName = context.label || '';
+                                    let rawVal = context.raw || 0;
+                                    let displayAmount = isMasked ? '******' : rawVal.toLocaleString();
+                                    let weight = grandTotal > 0 ? ((rawVal / grandTotal) * 100).toFixed(1) : '0.0';
+                                    return ` ${stockName}: ${displayAmount}원 (${weight}%)`;
+                                }
+                            }
+                        },
+                        datalabels: {
+                            display: true, 
+                            backgroundColor: context => (context.dataIndex % 2 === 0) ? '#18181b' : '#e5e7eb',
+                            color: context => (context.dataIndex % 2 === 0) ? '#ffffff' : '#111827',
+                            borderRadius: 4,
+                            padding: { top: 3, bottom: 3, left: 5, right: 5 },
+                            font: { weight: 'bold', size: 9.5 },
+                            formatter: (value, ctx) => {
+                                if (grandTotal <= 0 || value <= 0) return '';
+                                let percentage = ((value / grandTotal) * 100).toFixed(1);
+                                if (parseFloat(percentage) < 2.5) return ''; 
+
+                                let label = ctx.chart.data.labels[ctx.dataIndex];
+                                let formattedLabel = label.length > 7 ? chunkText(label, 5) : label;
+                                return `${formattedLabel}\n(${percentage}%)`;
+                            },
+                            textAlign: 'center'
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderTrendSummary(dates, trendsData) {
+            const rangeElem = document.getElementById("trend-summary-range");
+            const descElem = document.getElementById("trend-summary-desc");
+            const diffElem = document.getElementById("trend-summary-diff");
+            const rateElem = document.getElementById("trend-summary-rate");
+
+            if (!dates || dates.length === 0) {
+                diffElem.innerText = isMasked ? "******원" : "+0원";
+                rateElem.innerText = isMasked ? "(+***.**%)" : "(+0.00%)";
+                return;
+            }
+
+            const firstDate = dates[0];
+            const lastDate = dates[dates.length - 1];
+
+            const firstTotal = trendsData.filter(d => d.date === firstDate).reduce((sum, item) => sum + item.amount, 0);
+            const lastTotal = trendsData.filter(d => d.date === lastDate).reduce((sum, item) => sum + item.amount, 0);
+
+            const diff = lastTotal - firstTotal;
+            const rate = firstTotal > 0 ? ((diff / firstTotal) * 100) : 0;
+
+            rangeElem.innerText = `${firstDate} ➔ ${lastDate}`;
+            descElem.innerText = `자산 증감 현황`;
+
+            if (isMasked) {
+                diffElem.innerText = "******원";
+                rateElem.innerText = "(+***.**%)";
+            } else {
+                const prefix = diff >= 0 ? "+" : "";
+                diffElem.innerText = `${prefix}${diff.toLocaleString()}원`;
+                rateElem.innerText = `(${prefix}${rate.toFixed(2)}%)`;
+
+                if (diff < 0) {
+                    diffElem.className = "text-sm font-black text-blue-600 dark:text-blue-400 tracking-tight";
+                    rateElem.className = "text-[11px] font-bold text-blue-600/80 dark:text-blue-400/80";
+                } else {
+                    diffElem.className = "text-sm font-black text-red-600 dark:text-red-400 tracking-tight";
+                    rateElem.className = "text-[11px] font-bold text-red-600/80 dark:text-red-400/80";
+                }
+            }
+        }
+
+        function updateTrendChart(trendsData) {
+            const dates = [...new Set(trendsData.map(d => d.date))];
+            const accounts = [...new Set(trendsData.map(d => d.account))];
+
+            renderTrendSummary(dates, trendsData);
+
+            const datasets = accounts.map((acc, idx) => {
+                const data = dates.map(date => {
+                    const found = trendsData.find(item => item.date === date && item.account === acc);
+                    return found ? found.amount : 0;
+                });
+                return {
+                    label: acc,
+                    data: data,
+                    backgroundColor: accountColorPalette[idx % accountColorPalette.length],
+                    borderRadius: 3,
+                    barThickness: 16
+                };
+            });
+
+            if (trendChart) {
+                trendChart.destroy();
+            }
+
+            const ctx = document.getElementById('trendBarChart').getContext('2d');
+            trendChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: dates,
+                    datasets: datasets
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: { right: 105 } },
+                    scales: {
+                        x: { stacked: true, display: false, grid: { display: false } },
+                        y: {
+                            stacked: true,
+                            grid: { display: false },
+                            ticks: {
+                                font: { size: 10, weight: '600' },
+                                color: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#4b5563'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 10,
+                                padding: 8,
+                                font: { size: 10 },
+                                color: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#4b5563'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let rawVal = context.raw || 0;
+                                    let valText = isMasked ? '******' : rawVal.toLocaleString() + '원';
+                                    return `${context.dataset.label}: ${valText}`;
+                                }
+                            }
+                        },
+                        datalabels: { display: false }
+                    }
+                },
+                plugins: [{
+                    id: 'customSingleLabelColor',
+                    afterDatasetDraw(chart, args) {
+                        const { ctx } = chart;
+                        const meta = chart.getDatasetMeta(args.index);
+                        
+                        if (args.index !== chart.data.datasets.length - 1) return;
+
+                        meta.data.forEach((element, index) => {
+                            let total = 0;
+                            chart.data.datasets.forEach(ds => {
+                                total += ds.data[index] || 0;
+                            });
+
+                            let eokValue = isMasked ? '****** ' : (total / 100000000).toFixed(2) + '억 ';
+                            let baseAmount = 820334933;
+                            let ratio = ((total - baseAmount) / baseAmount) * 100;
+                            let ratioText = `(${ratio >= 0 ? '+' : ''}${ratio.toFixed(1)}%)`;
+
+                            let font = 'bold 9.5px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif';
+                            ctx.font = font;
+
+                            let amountWidth = ctx.measureText(eokValue).width;
+                            let ratioWidth = ctx.measureText(ratioText).width;
+                            let totalWidth = amountWidth + ratioWidth;
+
+                            let paddingX = 6;
+                            let paddingY = 3;
+                            let height = 15;
+
+                            let x = element.x + 6;
+                            let y = element.y - (height / 2);
+
+                            ctx.fillStyle = '#000000';
+                            ctx.beginPath();
+                            ctx.roundRect(x, y, totalWidth + (paddingX * 2), height + (paddingY * 2), 4);
+                            ctx.fill();
+
+                            ctx.textBaseline = 'middle';
+                            let textY = y + (height / 2) + paddingY;
+
+                            ctx.fillStyle = '#ffffff';
+                            ctx.fillText(eokValue, x + paddingX, textY);
+
+                            ctx.fillStyle = ratio >= 0 ? '#ff6b6b' : '#60a5fa';
+                            ctx.fillText(ratioText, x + paddingX + amountWidth, textY);
+                        });
+                    }
+                }]
+            });
+        }
+
+        function updatePnlChart() {
+            let groupedMap = {};
+            let accountGroupsMap = {};
+            pnlDataList.forEach(item => {
+                groupedMap[item.year] = (groupedMap[item.year] || 0) + item.amount;
+                if (!accountGroupsMap[item.year]) accountGroupsMap[item.year] = [];
+                accountGroupsMap[item.year].push(`${item.account}: ${item.amount.toLocaleString()}원`);
+            });
+
+            const years = Object.keys(groupedMap);
+            const amounts = Object.values(groupedMap);
+            const backgroundColors = amounts.map(val => val < 0 ? '#3b82f6' : '#ef4444');
+
+            let totalSum = amounts.reduce((acc, cur) => acc + cur, 0);
+            
+            formatPnlText("pnl-grand-total", totalSum);
+
+            if (pnlChart) {
+                pnlChart.destroy();
+            }
+
+            const ctx = document.getElementById('pnlBarChart').getContext('2d');
+            pnlChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: years,
+                    datasets: [{
+                        data: amounts,
+                        backgroundColor: backgroundColors,
+                        borderRadius: 4,
+                        barThickness: 20
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: { right: 85 } },
+                    scales: {
+                        x: { display: false, grid: { display: false } },
+                        y: {
+                            grid: { display: false },
+                            ticks: {
+                                font: { size: 10, weight: '600' },
+                                color: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#4b5563'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let year = context.label;
+                                    let details = accountGroupsMap[year] || [];
+                                    let rawVal = context.raw || 0;
+                                    let valText = isMasked ? '******' : rawVal.toLocaleString() + '원';
+                                    let result = [`총 합계: ${valText}`];
+                                    if (!isMasked) {
+                                        result.push(...details.map(d => ` - ${d}`));
+                                    }
+                                    return result;
+                                }
+                            }
+                        },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'end',
+                            formatter: function(value) {
+                                if (isMasked) return '******';
+                                let absVal = Math.abs(value);
+                                let sign = value < 0 ? '-' : (value > 0 ? '+' : '');
+                                
+                                if (absVal >= 100000000) {
+                                    let eokVal = (absVal / 100000000).toFixed(2);
+                                    return `${sign}${eokVal}억`;
+                                } else {
+                                    let manVal = (absVal / 10000).toFixed(1);
+                                    return `${sign}${manVal}만`;
+                                }
+                            },
+                            backgroundColor: '#000000',
+                            color: function(context) {
+                                let val = context.dataset.data[context.dataIndex];
+                                return val < 0 ? '#60a5fa' : '#ff6b6b';
+                            },
+                            borderRadius: 4,
+                            padding: { top: 2, bottom: 2, left: 5, right: 5 },
+                            font: { size: 9.5, weight: 'bold' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderApp() {
+            let currentAccountData = accountDataList;
+            let currentTrendData = trendRawData;
+
+            let stockMap = {};
+            let grandTotal = 0;
+
+            currentAccountData.forEach(data => {
+                grandTotal += data.amount;
+                stockMap[data.stock] = (stockMap[data.stock] || 0) + data.amount;
+            });
+
+            document.getElementById("grand-total").innerText = isMasked ? "******" : grandTotal.toLocaleString();
+
+            const accountTbody = document.getElementById("account-table-body");
+            accountTbody.innerHTML = "";
+
+            currentAccountData.forEach((data, idx) => {
+                const tr = document.createElement("tr");
+                tr.className = "hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors";
+                const weight = grandTotal > 0 ? ((data.amount / grandTotal) * 100).toFixed(1) : "0.0";
+                const displayVal = isMasked ? "******" : data.amount.toLocaleString();
+
+                if (isEditMode) {
+                    tr.innerHTML = `
+                        <td class="py-1.5 pr-1"><input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 text-xs font-medium" value="${data.account}" onchange="updateAccount(${idx}, 'account', this.value)"></td>
+                        <td class="py-1.5 px-1"><input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 text-xs font-medium" value="${data.stock}" onchange="updateAccount(${idx}, 'stock', this.value)"></td>
+                        <td class="py-1.5 pl-1 text-right">
+                            <div class="flex items-center justify-end gap-0.5">
+                                <input type="text" class="w-full text-right bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 text-xs font-medium" value="${displayVal}" oninput="updateAmountInput(this, ${idx})">
+                                <span class="text-xs text-gray-500 shrink-0">원</span>
+                            </div>
+                        </td>
+                    `;
+                } else {
+                    tr.innerHTML = `
+                        <td class="py-2 font-medium">${data.account}</td>
+                        <td class="py-2 font-medium">${data.stock}</td>
+                        <td class="py-2 text-right">
+                            ${displayVal}원 <span class="font-bold text-gray-700 dark:text-gray-300 ml-0.5">(${isMasked ? '0.0' : weight}%)</span>
+                        </td>
+                    `;
+                }
+                accountTbody.appendChild(tr);
+            });
+
+            const summaryBody = document.getElementById("stock-summary-body");
+            summaryBody.innerHTML = "";
+
+            const sortedStocks = Object.entries(stockMap).sort((a, b) => b[1] - a[1]);
+
+            sortedStocks.forEach(([stock, amount], index) => {
+                const weight = grandTotal > 0 ? ((amount / grandTotal) * 100).toFixed(1) : "0.0";
+                const displayVal = isMasked ? "******" : amount.toLocaleString();
+                const color = getStockColor(stock, index);
+                
+                const tr = document.createElement("tr");
+                tr.className = "hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors";
+                tr.innerHTML = `
+                    <td class="py-2 font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full inline-block shrink-0" style="background-color: ${color}"></span>
+                        ${stock}
+                    </td>
+                    <td class="py-2 text-right font-medium">${displayVal}원 <span class="font-bold text-gray-700 dark:text-gray-300 ml-0.5">(${isMasked ? '0.0' : weight}%)</span></td>
+                `;
+                summaryBody.appendChild(tr);
+            });
+
+            updateChart(sortedStocks, grandTotal);
+            updateYtdChartAndSummary();
+            updateTrendChart(currentTrendData);
+            updatePnlChart();
+            lucide.createIcons();
+        }
+
+        function updateAccount(index, key, value) {
+            if (accountDataList[index]) {
+                accountDataList[index][key] = value.trim();
+                saveAllToLocalStorage();
+                renderApp();
+            }
+        }
+
+        function updateAmountInput(input, index) {
+            if (accountDataList[index]) {
+                let cleanVal = input.value.replace(/[^0-9]/g, "");
+                let number = Number(cleanVal) || 0;
+                accountDataList[index].amount = number;
+                saveAllToLocalStorage();
+                renderApp();
+            }
+        }
+
+        function sortTable(columnIndex) {
+            let ascending = sortDirections[columnIndex];
+            let list = accountDataList;
+
+            list.sort((a, b) => {
+                if (columnIndex === 2) {
+                    return ascending ? a.amount - b.amount : b.amount - a.amount;
+                } else if (columnIndex === 0) {
+                    return ascending ? a.account.localeCompare(b.account) : b.account.localeCompare(a.account);
+                } else {
+                    return ascending ? a.stock.localeCompare(b.stock) : b.stock.localeCompare(a.stock);
+                }
+            });
+
+            sortDirections[columnIndex] = !ascending;
+            renderApp();
+        }
+
+        window.onload = function() {
+            loadFromLocalStorage();
+            initTopMemoUI();
+            document.getElementById("trendMemoView").innerText = trendMemoText;
+            renderApp();
+        };
+    </script>
+</body>
+</html>

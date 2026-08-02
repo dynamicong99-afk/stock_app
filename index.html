@@ -35,20 +35,6 @@
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
-
-        /* 계좌별 상세내역 보기모드 Fade-out (Gradient Mask) 효과 스타일 */
-        .fade-text {
-            white-space: nowrap;
-            overflow: hidden;
-            display: block;
-            -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,1) 70%, rgba(0,0,0,0) 100%);
-            mask-image: linear-gradient(to right, rgba(0,0,0,1) 70%, rgba(0,0,0,0) 100%);
-        }
-
-        .nowrap-amount {
-            white-space: nowrap !important;
-            word-break: keep-all;
-        }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-brand-darkBg text-gray-900 dark:text-gray-100 min-h-screen p-4 transition-colors duration-300">
@@ -62,63 +48,16 @@
                 <i data-lucide="trending-up" class="w-6 h-6 text-blue-500"></i>
                 MY STOCK ASSETS
             </h1>
-            <div class="flex items-center gap-1.5">
-                <button id="maskToggleBtn" onclick="toggleMask()" title="금액 숨기기/보이기" class="p-2 rounded-full border border-gray-300 dark:border-gray-800 bg-white dark:bg-[#181d2a] text-xs font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition shadow-sm text-gray-700 dark:text-gray-200 flex items-center justify-center">
-                    <i data-lucide="eye" class="w-4 h-4 text-blue-500 dark:text-blue-400" id="maskIcon"></i>
+            <div class="flex items-center gap-2">
+                <button id="maskToggleBtn" onclick="toggleMask()" class="px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-800 bg-white dark:bg-[#181d2a] text-xs font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition shadow-sm flex items-center gap-1.5">
+                    <i data-lucide="lock" class="w-3.5 h-3.5" id="maskIcon"></i>
+                    <span id="maskBtnText">Hide Amounts</span>
                 </button>
-                <button onclick="toggleDarkMode()" title="다크모드 전환" class="p-2 rounded-full border border-gray-300 dark:border-gray-800 bg-white dark:bg-[#181d2a] text-xs hover:bg-gray-50 dark:hover:bg-gray-800 transition shadow-sm flex items-center justify-center">
+                <button onclick="toggleDarkMode()" class="p-2 rounded-full border border-gray-300 dark:border-gray-800 bg-white dark:bg-[#181d2a] text-xs hover:bg-gray-50 dark:hover:bg-gray-800 transition shadow-sm flex items-center justify-center">
                     <i data-lucide="moon" class="w-4 h-4 hidden dark:block"></i>
                     <i data-lucide="sun" class="w-4 h-4 block dark:hidden"></i>
                 </button>
             </div>
-        </div>
-
-        <!-- 최상단 서식 탑재 메모 카드 (편집/뷰 모드 토글) -->
-        <div class="bg-white dark:bg-brand-cardDark border border-amber-500/30 dark:border-amber-500/20 rounded-3xl p-5 shadow-sm dark:shadow-xl flex flex-col space-y-3">
-            <div class="flex justify-between items-center">
-                <h3 class="text-sm font-bold flex items-center gap-1.5 text-gray-900 dark:text-white">
-                    <i data-lucide="notebook-pen" class="w-4 h-4 text-amber-500"></i>
-                    메모
-                </h3>
-                <button id="topMemoToggleBtn" onclick="toggleTopMemoEdit()" class="px-3 py-1 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-semibold text-xs hover:bg-amber-500/20 transition flex items-center gap-1">
-                    <i data-lucide="pencil" class="w-3 h-3" id="topMemoBtnIcon"></i>
-                    <span id="topMemoBtnText">Edit</span>
-                </button>
-            </div>
-
-            <!-- 서식 툴바 (편집 모드 시 노출) -->
-            <div id="topMemoToolbar" class="hidden flex flex-wrap items-center gap-1.5 p-2 bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-800 rounded-2xl text-xs">
-                <select id="memoFontSize" onchange="applyMemoStyle()" class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-1.5 py-1 text-[11px] font-semibold text-gray-700 dark:text-gray-200 focus:outline-none cursor-pointer">
-                    <option value="12px">12px</option>
-                    <option value="14px" selected>14px</option>
-                    <option value="16px">16px</option>
-                    <option value="18px">18px</option>
-                    <option value="20px">20px</option>
-                    <option value="24px">24px</option>
-                    <option value="28px">28px</option>
-                    <option value="32px">32px</option>
-                </select>
-
-                <div class="flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-1.5 py-0.5">
-                    <i data-lucide="palette" class="w-3.5 h-3.5 text-gray-500"></i>
-                    <input type="color" id="memoColor" value="#1f2937" onchange="applyMemoStyle()" class="w-5 h-5 bg-transparent border-0 cursor-pointer rounded">
-                </div>
-
-                <div class="flex items-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-0.5">
-                    <button id="btnBold" onclick="toggleStyleState('bold')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 font-black text-xs w-6 h-6 flex items-center justify-center">B</button>
-                    <button id="btnItalic" onclick="toggleStyleState('italic')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 italic text-xs w-6 h-6 flex items-center justify-center">I</button>
-                    <button id="btnUnderline" onclick="toggleStyleState('underline')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 underline text-xs w-6 h-6 flex items-center justify-center">U</button>
-                </div>
-
-                <div class="flex items-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-0.5">
-                    <button id="btnAlignLeft" onclick="setMemoAlign('left')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 w-6 h-6 flex items-center justify-center"><i data-lucide="align-left" class="w-3.5 h-3.5"></i></button>
-                    <button id="btnAlignCenter" onclick="setMemoAlign('center')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 w-6 h-6 flex items-center justify-center"><i data-lucide="align-center" class="w-3.5 h-3.5"></i></button>
-                    <button id="btnAlignRight" onclick="setMemoAlign('right')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 w-6 h-6 flex items-center justify-center"><i data-lucide="align-right" class="w-3.5 h-3.5"></i></button>
-                </div>
-            </div>
-
-            <div id="topMemoView" class="whitespace-pre-line leading-relaxed font-medium min-h-[40px]"></div>
-            <textarea id="topMemoTextarea" placeholder="메모할 내용을 입력하세요..." class="hidden w-full min-h-[90px] p-3 rounded-2xl border border-amber-400/50 bg-amber-50/30 dark:bg-gray-900/80 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-amber-500 resize-y leading-relaxed font-medium transition"></textarea>
         </div>
 
         <!-- 1. 총 자산 현황 카드 -->
@@ -131,45 +70,33 @@
             </div>
             <div class="mt-2">
                 <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">총 매입 금액</p>
-                <div class="text-3xl font-black text-gray-900 dark:text-white tracking-tight mt-1">
+                <div class="text-3xl font-black text-blue-600 dark:text-blue-400 tracking-tight mt-1">
                     <span id="grand-total">******</span> <span class="text-lg font-bold text-gray-700 dark:text-gray-300">원</span>
                 </div>
             </div>
         </div>
 
-        <!-- 올해 손익 금액 섹션 -->
-        <div class="bg-white dark:bg-brand-cardDark border border-gray-200 dark:border-gray-800/80 rounded-3xl p-5 shadow-sm dark:shadow-xl flex flex-col space-y-3">
+        <!-- 2. 메모 카드 (기본 View 모드 + Pin 고정 메모 표시) -->
+        <div class="bg-white dark:bg-brand-cardDark border border-amber-500/30 dark:border-amber-500/20 rounded-3xl p-5 shadow-sm dark:shadow-xl flex flex-col space-y-2.5">
             <div class="flex justify-between items-center">
                 <h3 class="text-sm font-bold flex items-center gap-1.5 text-gray-900 dark:text-white">
-                    <i data-lucide="coins" class="w-4 h-4 text-emerald-500"></i>
-                    올해 손익
+                    <i data-lucide="notebook-pen" class="w-4 h-4 text-amber-500"></i>
+                    메모
                 </h3>
                 <div class="flex items-center gap-1.5">
-                    <div class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-0.5 border border-gray-200 dark:border-gray-700">
-                        <button onclick="shiftYtdDate(-1)" class="p-1 text-gray-500 hover:text-gray-900 dark:hover:text-white"><i data-lucide="chevron-left" class="w-3.5 h-3.5"></i></button>
-                        <select id="ytdDateSelector" onchange="selectYtdDate(this.value)" class="bg-transparent text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none px-1 cursor-pointer">
-                        </select>
-                        <button onclick="shiftYtdDate(1)" class="p-1 text-gray-500 hover:text-gray-900 dark:hover:text-white"><i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></button>
-                    </div>
-                    <button onclick="openYtdModal()" class="px-3 py-1 rounded-xl bg-blue-600 text-white font-semibold text-xs hover:bg-blue-700 transition flex items-center gap-1">
-                        <i data-lucide="pencil" class="w-3 h-3"></i>
-                        <span>Edit</span>
+                    <button onclick="openNewMemoEditor()" class="px-2.5 py-1 rounded-xl bg-amber-500 text-white font-semibold text-xs hover:bg-amber-600 transition flex items-center gap-1 shadow-sm">
+                        <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                        <span>새 메모</span>
+                    </button>
+                    <button onclick="openMemoViewModal()" class="px-2.5 py-1 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-semibold text-xs hover:bg-amber-500/20 transition flex items-center gap-1">
+                        <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                        <span>View</span>
                     </button>
                 </div>
             </div>
 
-            <div class="bg-gray-50 dark:bg-gray-900/60 border border-gray-100 dark:border-gray-800 rounded-2xl p-3.5 flex justify-between items-center">
-                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">올해 누적 손익 합계</span>
-                <div class="text-base font-black">
-                    <span id="ytd-total-amount">0</span> <span class="text-xs font-bold text-gray-500 dark:text-gray-400">원</span>
-                </div>
-            </div>
-
-            <div id="ytd-items-grid" class="grid grid-cols-2 gap-2 text-xs"></div>
-
-            <div class="relative w-full h-[180px] pt-2">
-                <canvas id="ytdBarChart"></canvas>
-            </div>
+            <!-- Pin 메모 표출 영역 -->
+            <div id="mainPinnedMemoContainer" class="pt-1"></div>
         </div>
 
         <!-- 3. 종목별 통합 보유 현황 카드 -->
@@ -189,10 +116,13 @@
                             <th class="pb-2 text-right font-medium">매입금액 (비중)</th>
                         </tr>
                     </thead>
-                    <tbody id="stock-summary-body" class="divide-y divide-gray-100 dark:divide-gray-800/60"></tbody>
+                    <tbody id="stock-summary-body" class="divide-y divide-gray-100 dark:divide-gray-800/60">
+                        <!-- 동적 생성 -->
+                    </tbody>
                 </table>
             </div>
 
+            <!-- 파이 차트 영역 -->
             <div class="relative w-full pt-4 border-t border-gray-100 dark:border-gray-800/60 flex justify-center items-center overflow-visible">
                 <div class="w-64 h-64 relative">
                     <canvas id="stockPieChart"></canvas>
@@ -215,23 +145,18 @@
             <p class="text-[10px] text-gray-400 mb-3">[Edit] 버튼으로 수정 가능하며, 항목 터치 시 정렬됩니다.</p>
             
             <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs table-fixed">
+                <table class="w-full text-left text-xs">
                     <thead>
                         <tr class="text-gray-400 border-b border-gray-100 dark:border-gray-800">
-                            <th class="pb-2 cursor-pointer hover:text-blue-500 transition select-none w-[28%]" onclick="sortTable(0)">계좌 ↕</th>
-                            <th class="pb-2 cursor-pointer hover:text-blue-500 transition select-none w-[32%]" onclick="sortTable(1)">종목 ↕</th>
-                            <th class="pb-2 text-right cursor-pointer hover:text-blue-500 transition select-none w-[40%] nowrap-amount" onclick="sortTable(2)" id="table-header-amount">매입금액 (비중) ↕</th>
+                            <th class="pb-2 cursor-pointer hover:text-blue-500 transition select-none" onclick="sortTable(0)">계좌 ↕</th>
+                            <th class="pb-2 cursor-pointer hover:text-blue-500 transition select-none" onclick="sortTable(1)">종목 ↕</th>
+                            <th class="pb-2 text-right cursor-pointer hover:text-blue-500 transition select-none" onclick="sortTable(2)" id="table-header-amount">매입금액 (비중) ↕</th>
                         </tr>
                     </thead>
-                    <tbody id="account-table-body" class="divide-y divide-gray-100 dark:divide-gray-800/60"></tbody>
+                    <tbody id="account-table-body" class="divide-y divide-gray-100 dark:divide-gray-800/60">
+                        <!-- 동적 생성 -->
+                    </tbody>
                 </table>
-            </div>
-
-            <div id="accountAddBtnContainer" class="hidden mt-3">
-                <button type="button" onclick="addNewAccountRow()" class="w-full py-2 rounded-xl border border-dashed border-blue-400 dark:border-blue-700 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 text-xs font-semibold flex items-center justify-center gap-1 transition">
-                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                    <span>+ 계좌 내역 추가</span>
-                </button>
             </div>
         </div>
 
@@ -248,36 +173,25 @@
                 </button>
             </div>
 
-            <div class="mb-3 bg-white dark:bg-brand-cardDark border border-amber-500/30 dark:border-amber-500/20 rounded-2xl p-4 shadow-sm flex flex-col">
+            <!-- 차트 메모 영역 -->
+            <div class="mb-4 bg-white dark:bg-brand-cardDark border border-amber-500/30 dark:border-amber-500/20 rounded-2xl p-4 shadow-sm flex flex-col">
                 <div class="flex justify-between items-center mb-1">
                     <h4 class="text-xs font-bold flex items-center gap-1.5 text-gray-900 dark:text-white">
-                        <i data-lucide="file-text" class="w-3.5 h-3.5 text-amber-500"></i> 메모
+                        <i data-lucide="file-text" class="w-3.5 h-3.5 text-amber-500"></i> 히스토리 메모
                     </h4>
                     <button id="trendMemoEditBtn" onclick="toggleTrendMemoEdit()" class="px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-semibold text-[10px] hover:bg-amber-500/20 transition flex items-center gap-1">
                         <i data-lucide="pencil" class="w-2.5 h-2.5" id="trendMemoEditIcon"></i>
                         <span id="trendMemoEditBtnText">Edit</span>
                     </button>
                 </div>
-                <div id="trendMemoView" class="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed font-medium"></div>
-                <textarea id="trendMemoEdit" oninput="updateTrendMemo(this.value)" class="hidden w-full text-xs p-2.5 mt-1 rounded-xl border border-amber-400 bg-amber-50/50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-amber-500 resize-y" rows="4"></textarea>
+                <div id="trendMemoView" class="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed font-medium">3/6 : 1억 추가
+5/31 : 주식보상 30주 추가
+6/25 : 1000만원 추가
+7/12 : 주식보상 22주 추가</div>
+                <textarea id="trendMemoEdit" onchange="updateTrendMemo(this.value)" class="hidden w-full text-xs p-2.5 mt-1 rounded-xl border border-amber-400 bg-amber-50/50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-amber-500 resize-y" rows="4"></textarea>
             </div>
 
-            <div class="mb-4 p-3.5 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-blue-500/10 border border-emerald-500/20 dark:border-emerald-500/30 rounded-2xl flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
-                        <i data-lucide="arrow-up-right" class="w-4 h-4 text-emerald-600 dark:text-emerald-400"></i>
-                    </div>
-                    <div>
-                        <span class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 block" id="trend-summary-range">누적 자산 성과</span>
-                        <span class="text-xs font-bold text-gray-800 dark:text-gray-200" id="trend-summary-desc">최초 대비 총 성과</span>
-                    </div>
-                </div>
-                <div class="text-right">
-                    <div class="text-sm font-black text-emerald-600 dark:text-emerald-400 tracking-tight" id="trend-summary-diff">+0원</div>
-                    <div class="text-[11px] font-bold text-emerald-600/80 dark:text-emerald-400/80" id="trend-summary-rate">+0.00%</div>
-                </div>
-            </div>
-
+            <!-- 가로 누적 막대 그래프 영역 -->
             <div class="relative w-full h-[420px] mt-1">
                 <canvas id="trendBarChart"></canvas>
             </div>
@@ -296,6 +210,7 @@
                 </button>
             </div>
 
+            <!-- 총 금액 합계액 박스 -->
             <div class="bg-gray-50 dark:bg-gray-900/60 border border-gray-100 dark:border-gray-800 rounded-2xl p-3.5 flex justify-between items-center">
                 <span class="text-xs font-medium text-gray-500 dark:text-gray-400">전체 확정 손익 합계</span>
                 <div class="text-base font-black text-gray-900 dark:text-white">
@@ -303,6 +218,7 @@
                 </div>
             </div>
 
+            <!-- 편집 모드용 테이블 -->
             <div id="pnlEditContainer" class="hidden overflow-x-auto space-y-2 pt-2">
                 <table class="w-full text-left text-xs">
                     <thead>
@@ -313,7 +229,9 @@
                             <th class="pb-1 text-center font-medium w-10">삭제</th>
                         </tr>
                     </thead>
-                    <tbody id="pnl-edit-tbody" class="divide-y divide-gray-100 dark:divide-gray-800/60"></tbody>
+                    <tbody id="pnl-edit-tbody" class="divide-y divide-gray-100 dark:divide-gray-800/60">
+                        <!-- 동적 생성 -->
+                    </tbody>
                 </table>
                 <button type="button" onclick="addPnlRow()" class="w-full py-1.5 rounded-xl border border-dashed border-blue-300 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 text-xs font-semibold flex items-center justify-center gap-1 transition">
                     <i data-lucide="plus" class="w-3 h-3"></i>
@@ -321,6 +239,7 @@
                 </button>
             </div>
 
+            <!-- 확정 손익 바 차트 영역 -->
             <div class="relative w-full h-[320px] mt-1">
                 <canvas id="pnlBarChart"></canvas>
             </div>
@@ -328,52 +247,147 @@
 
     </div>
 
-    <!-- 모달: 올해 손익 관리 -->
-    <div id="ytdModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white dark:bg-brand-cardDark border border-gray-200 dark:border-gray-800 rounded-3xl p-5 w-full max-w-sm shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
-            <div class="flex justify-between items-center shrink-0">
+    <!-- 새 메모 작성 모달 (Edit 화면) -->
+    <div id="newMemoModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-brand-cardDark border border-gray-200 dark:border-gray-800 rounded-3xl p-5 w-full max-w-sm shadow-2xl space-y-3">
+            <div class="flex justify-between items-center">
                 <h4 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
-                    <i data-lucide="coins" class="w-4 h-4 text-emerald-500"></i>
-                    올해 손익 데이터 관리
+                    <i data-lucide="notebook-pen" class="w-4 h-4 text-amber-500"></i>
+                    새 메모 작성
                 </h4>
-                <button onclick="closeYtdModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                <button onclick="closeNewMemoEditor()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                     <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
             </div>
 
-            <div class="overflow-y-auto space-y-3 pr-1 flex-1">
-                <div class="p-3 bg-gray-50 dark:bg-gray-900/60 rounded-2xl border border-gray-100 dark:border-gray-800 space-y-2">
-                    <h5 class="text-xs font-bold text-blue-600 dark:text-blue-400">신규/수정 항목 입력</h5>
-                    <div>
-                        <label class="block text-[10px] font-semibold text-gray-500 mb-1">날짜 (예: 26.07.30)</label>
-                        <input type="text" id="inputYtdDate" placeholder="26.07.30" class="w-full bg-white dark:bg-gray-800 p-2 text-xs rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:border-blue-500 font-medium">
-                    </div>
+            <!-- 서식 툴바 -->
+            <div class="flex flex-wrap items-center gap-1.5 pt-1 pb-1 border-b border-gray-100 dark:border-gray-800">
+                <select id="newMemoFontSize" onchange="applyNewMemoStyle()" class="text-[11px] bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-1.5 py-1 text-gray-700 dark:text-gray-300">
+                    <option value="xs">작게 (12px)</option>
+                    <option value="sm" selected>보통 (14px)</option>
+                    <option value="base">큼 (16px)</option>
+                    <option value="lg">매우큼 (18px)</option>
+                </select>
 
-                    <div id="ytdDynamicFields" class="space-y-2"></div>
+                <input type="color" id="newMemoColor" value="#374151" onchange="applyNewMemoStyle()" class="w-6 h-6 border-0 rounded cursor-pointer p-0 bg-transparent">
 
-                    <button type="button" onclick="addYtdDynamicInputRow()" class="w-full py-1.5 mt-2 rounded-xl border border-dashed border-emerald-400 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-xs font-semibold flex items-center justify-center gap-1 transition">
-                        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                        <span>+ 항목 추가</span>
-                    </button>
-
-                    <button onclick="saveYtdRecord()" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition mt-2">
-                        저장하기
-                    </button>
+                <div class="flex items-center gap-0.5 border-l border-gray-200 dark:border-gray-700 pl-1.5">
+                    <button type="button" id="btnNewBold" onclick="toggleNewOption('bold')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 font-bold text-xs w-6 h-6 flex items-center justify-center">B</button>
+                    <button type="button" id="btnNewItalic" onclick="toggleNewOption('italic')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 italic text-xs w-6 h-6 flex items-center justify-center">I</button>
+                    <button type="button" id="btnNewUnderline" onclick="toggleNewOption('underline')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 underline text-xs w-6 h-6 flex items-center justify-center">U</button>
                 </div>
 
-                <div class="space-y-1.5 pt-2">
-                    <h5 class="text-xs font-bold text-gray-700 dark:text-gray-300">저장된 날짜 목록</h5>
-                    <div id="ytdHistoryList" class="space-y-1.5 max-h-40 overflow-y-auto pr-1"></div>
+                <div class="flex items-center gap-0.5 border-l border-gray-200 dark:border-gray-700 pl-1.5">
+                    <button type="button" onclick="setNewAlign('left')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800"><i data-lucide="align-left" class="w-3.5 h-3.5"></i></button>
+                    <button type="button" onclick="setNewAlign('center')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800"><i data-lucide="align-center" class="w-3.5 h-3.5"></i></button>
+                    <button type="button" onclick="setNewAlign('right')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800"><i data-lucide="align-right" class="w-3.5 h-3.5"></i></button>
                 </div>
             </div>
 
-            <div class="pt-2 border-t border-gray-100 dark:border-gray-800 shrink-0">
-                <button onclick="closeYtdModal()" class="w-full py-2 rounded-xl bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium text-xs">닫기</button>
+            <!-- 메모 작성 박스 -->
+            <textarea id="newMemoText" placeholder="새로운 메모를 입력하세요..." class="w-full text-xs p-3 rounded-2xl border border-amber-300 dark:border-amber-500/30 bg-amber-50/30 dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-amber-500 resize-y font-medium transition-all" rows="5"></textarea>
+
+            <div class="flex gap-2 pt-1">
+                <button onclick="closeNewMemoEditor()" class="w-1/2 py-2 rounded-xl bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium text-xs">취소</button>
+                <button onclick="saveNewMemo()" class="w-1/2 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition shadow-sm">저장하기</button>
             </div>
         </div>
     </div>
 
-    <!-- 모달: 트랜드 내역 추가 -->
+    <!-- 메모 모달 (Fullscreen Modal - 전체화면 목록 & 상세보기/수정) -->
+    <div id="memoViewModal" class="fixed inset-0 bg-white dark:bg-brand-darkBg z-50 flex flex-col hidden overflow-hidden">
+        <!-- 모달 헤더 -->
+        <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-white dark:bg-brand-cardDark shrink-0">
+            <h3 class="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="notebook" class="w-5 h-5 text-amber-500"></i>
+                <span id="modalHeaderTitle">메모장 히스토리</span>
+            </h3>
+            <button onclick="closeMemoViewModal()" class="p-1 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+
+        <!-- 검색바 영역 -->
+        <div id="memoSearchContainer" class="p-4 border-b border-gray-100 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/30 shrink-0">
+            <div class="relative max-w-[480px] mx-auto">
+                <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                <input type="text" id="memoSearchInput" oninput="renderMemoList()" placeholder="날짜 또는 메모 내용 실시간 검색..." class="w-full bg-white dark:bg-gray-800 pl-9 pr-4 py-2 text-xs rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:border-amber-500 text-gray-800 dark:text-gray-200 font-medium shadow-sm">
+            </div>
+        </div>
+
+        <!-- 메모 컨텐츠 영역 (목록 뷰 vs 상세/수정 뷰) -->
+        <div class="flex-1 overflow-y-auto p-4 max-w-[480px] w-full mx-auto space-y-3">
+            <!-- 목록 뷰 -->
+            <div id="memoListView" class="space-y-3"></div>
+
+            <!-- 상세/수정 뷰 -->
+            <div id="memoDetailView" class="hidden space-y-4">
+                <div class="flex justify-between items-center pb-2 border-b border-gray-200 dark:border-gray-800">
+                    <button onclick="backToMemoList()" class="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1 hover:underline">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                        <span>목록으로</span>
+                    </button>
+                    <div class="flex items-center gap-1.5">
+                        <button id="btnMemoPinToggle" onclick="togglePinCurrentMemo()" class="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-semibold text-xs hover:bg-amber-500/20 transition flex items-center gap-1">
+                            <span>📌</span>
+                            <span id="btnMemoPinToggleText">Pin</span>
+                        </button>
+                        <button id="btnMemoEditToggle" onclick="toggleEditDetailMemo()" class="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-semibold text-xs hover:bg-blue-500/20 transition flex items-center gap-1">
+                            <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                            <span id="btnMemoEditToggleText">수정</span>
+                        </button>
+                        <button onclick="deleteCurrentDetailMemo()" class="px-2.5 py-1 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 font-semibold text-xs hover:bg-red-500/20 transition flex items-center gap-1">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            <span>삭제</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between text-[11px] text-gray-400 font-medium">
+                    <span id="detailMemoDateTime"></span>
+                    <span id="detailMemoPinnedBadge" class="hidden text-amber-600 dark:text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">📌 대표 고정 메모</span>
+                </div>
+
+                <!-- 읽기 모드 영역 -->
+                <div id="detailMemoReadBox" class="p-4 rounded-2xl bg-amber-50/20 dark:bg-gray-900/50 border border-amber-200/50 dark:border-gray-800 whitespace-pre-line leading-relaxed font-medium text-xs"></div>
+
+                <!-- 편집 모드 서식 & 입력 영역 -->
+                <div id="detailMemoEditBox" class="hidden space-y-3">
+                    <div class="flex flex-wrap items-center gap-1.5 pt-1 pb-1 border-b border-gray-100 dark:border-gray-800">
+                        <select id="editMemoFontSize" onchange="applyEditMemoStyle()" class="text-[11px] bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-1.5 py-1 text-gray-700 dark:text-gray-300">
+                            <option value="xs">작게 (12px)</option>
+                            <option value="sm">보통 (14px)</option>
+                            <option value="base">큼 (16px)</option>
+                            <option value="lg">매우큼 (18px)</option>
+                        </select>
+
+                        <input type="color" id="editMemoColor" value="#374151" onchange="applyEditMemoStyle()" class="w-6 h-6 border-0 rounded cursor-pointer p-0 bg-transparent">
+
+                        <div class="flex items-center gap-0.5 border-l border-gray-200 dark:border-gray-700 pl-1.5">
+                            <button type="button" id="btnEditBold" onclick="toggleEditOption('bold')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 font-bold text-xs w-6 h-6 flex items-center justify-center">B</button>
+                            <button type="button" id="btnEditItalic" onclick="toggleEditOption('italic')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 italic text-xs w-6 h-6 flex items-center justify-center">I</button>
+                            <button type="button" id="btnEditUnderline" onclick="toggleEditOption('underline')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 underline text-xs w-6 h-6 flex items-center justify-center">U</button>
+                        </div>
+
+                        <div class="flex items-center gap-0.5 border-l border-gray-200 dark:border-gray-700 pl-1.5">
+                            <button type="button" onclick="setEditAlign('left')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800"><i data-lucide="align-left" class="w-3.5 h-3.5"></i></button>
+                            <button type="button" onclick="setEditAlign('center')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800"><i data-lucide="align-center" class="w-3.5 h-3.5"></i></button>
+                            <button type="button" onclick="setEditAlign('right')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800"><i data-lucide="align-right" class="w-3.5 h-3.5"></i></button>
+                        </div>
+                    </div>
+
+                    <textarea id="editMemoText" class="w-full text-xs p-3 rounded-2xl border border-amber-400 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-amber-500 resize-y font-medium" rows="6"></textarea>
+
+                    <button onclick="saveUpdatedMemo()" class="w-full py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition shadow-sm flex items-center justify-center gap-1">
+                        <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                        <span>수정 완료</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 트랜드 내역 추가 모달 -->
     <div id="trendModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white dark:bg-brand-cardDark border border-gray-200 dark:border-gray-800 rounded-3xl p-5 w-full max-w-sm shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
             <div class="flex justify-between items-center shrink-0">
@@ -412,24 +426,431 @@
     <script>
         Chart.register(ChartDataLabels);
 
-        const STORAGE_KEY = 'my_stock_assets_app_data_v1';
-
         let sortDirections = [true, true, true];
         let isMasked = false; 
         let secretKey = "0713"; 
         let isEditMode = false;
         let isPnlEditMode = false;
         let isTrendMemoEditMode = false;
-        let isTopMemoEditMode = false;
 
         let pieChart = null;
         let trendChart = null;
         let pnlChart = null;
-        let ytdChart = null;
 
-        const defaultTrendMemoText = `3/6 : 1억 추가\n5/31 : 주식보상 30주 추가\n6/25 : 1000만원 추가\n7/12 : 주식보상 22주 추가`;
+        let trendMemoText = `3/6 : 1억 추가\n5/31 : 주식보상 30주 추가\n6/25 : 1000만원 추가\n7/12 : 주식보상 22주 추가`;
 
-        const defaultAccountDataList = [
+        // --- 메모 시스템 state & localStorage 연동 ---
+        let memoList = [];
+        let newMemoStyle = { bold: false, italic: false, underline: false, align: 'left' };
+        let editMemoStyle = { bold: false, italic: false, underline: false, align: 'left' };
+        let currentDetailMemoId = null;
+        let isDetailEditing = false;
+
+        // 초기 기본 데이터 (Pin 지정 포함)
+        const defaultInitialMemos = [
+            {
+                id: 1770000000001,
+                date: '2026.08.05',
+                time: '21:30',
+                text: 'ETF 리밸런싱 계획\n반등 시 레버리지 비중 19.5% > 15% 줄이기',
+                fontSize: 'sm',
+                color: '#374151',
+                bold: true,
+                italic: false,
+                underline: false,
+                align: 'left',
+                isPinned: true
+            },
+            {
+                id: 1770000000002,
+                date: '2026.08.03',
+                time: '18:10',
+                text: '미래에셋 계좌 비중 조정\n삼레 7.6% > 5.3% (약1800만원 매도)',
+                fontSize: 'sm',
+                color: '#2563eb',
+                bold: false,
+                italic: false,
+                underline: false,
+                align: 'left',
+                isPinned: false
+            },
+            {
+                id: 1770000000003,
+                date: '2026.08.02',
+                time: '09:20',
+                text: '오늘 삼성전자 10주 추가 매수\n하레 7.9% > 5.5% (약 1900만원 매도)',
+                fontSize: 'sm',
+                color: '#374151',
+                bold: false,
+                italic: false,
+                underline: false,
+                align: 'left',
+                isPinned: false
+            }
+        ];
+
+        function loadMemosFromStorage() {
+            try {
+                const stored = localStorage.getItem('myStockMemoList');
+                if (stored) {
+                    memoList = JSON.parse(stored);
+                } else {
+                    memoList = [...defaultInitialMemos];
+                    saveMemosToStorage();
+                }
+            } catch (e) {
+                memoList = [...defaultInitialMemos];
+            }
+        }
+
+        function saveMemosToStorage() {
+            localStorage.setItem('myStockMemoList', JSON.stringify(memoList));
+            renderMainPinnedMemo();
+        }
+
+        // 메인 화면 Pin 고정 메모 렌더링
+        function renderMainPinnedMemo() {
+            const container = document.getElementById('mainPinnedMemoContainer');
+            if (!container) return;
+
+            const pinnedMemo = memoList.find(m => m.isPinned);
+
+            if (!pinnedMemo) {
+                container.innerHTML = `
+                    <div class="py-6 px-4 rounded-2xl bg-amber-50/20 dark:bg-gray-900/40 border border-dashed border-amber-300 dark:border-amber-500/30 text-center flex flex-col items-center justify-center space-y-2">
+                        <p class="text-xs font-bold text-gray-600 dark:text-gray-300">📌 고정된 메모가 없습니다.</p>
+                        <button onclick="openNewMemoEditor()" class="px-3 py-1.5 rounded-xl bg-amber-500 text-white font-bold text-xs hover:bg-amber-600 transition shadow-sm flex items-center gap-1">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                            <span>새 메모 작성</span>
+                        </button>
+                    </div>
+                `;
+            } else {
+                const fontSizes = { xs: '12px', sm: '14px', base: '16px', lg: '18px' };
+                const fontSizeCss = fontSizes[pinnedMemo.fontSize] || '14px';
+                const colorCss = pinnedMemo.color || '#374151';
+                const boldCss = pinnedMemo.bold ? 'font-bold' : 'font-medium';
+                const italicCss = pinnedMemo.italic ? 'italic' : '';
+                const underlineCss = pinnedMemo.underline ? 'underline' : '';
+                const alignCss = pinnedMemo.align || 'left';
+
+                container.innerHTML = `
+                    <div class="p-3.5 rounded-2xl bg-amber-50/30 dark:bg-gray-900/50 border border-amber-200 dark:border-amber-500/20 space-y-1.5">
+                        <div class="flex justify-between items-center text-[11px] text-amber-600 dark:text-amber-400 font-bold">
+                            <span class="flex items-center gap-1">📌 ${pinnedMemo.date} ${pinnedMemo.time}</span>
+                            <button onclick="openMemoDetail(${pinnedMemo.id}); openMemoViewModal();" class="text-[10px] text-gray-400 hover:text-amber-500 flex items-center gap-0.5">상세보기 <i data-lucide="chevron-right" class="w-3 h-3"></i></button>
+                        </div>
+                        <div class="whitespace-pre-line leading-relaxed ${boldCss} ${italicCss} ${underlineCss}" style="font-size: ${fontSizeCss}; color: ${colorCss}; text-align: ${alignCss};">
+                            ${pinnedMemo.text}
+                        </div>
+                    </div>
+                `;
+            }
+            lucide.createIcons();
+        }
+
+        // 새 메모 작성 모달 열기/닫기
+        function openNewMemoEditor() {
+            document.getElementById('newMemoText').value = '';
+            document.getElementById('newMemoModal').classList.remove('hidden');
+            applyNewMemoStyle();
+            lucide.createIcons();
+        }
+
+        function closeNewMemoEditor() {
+            document.getElementById('newMemoModal').classList.add('hidden');
+        }
+
+        function toggleNewOption(type) {
+            newMemoStyle[type] = !newMemoStyle[type];
+            const btnMap = { bold: 'btnNewBold', italic: 'btnNewItalic', underline: 'btnNewUnderline' };
+            const elem = document.getElementById(btnMap[type]);
+            if (newMemoStyle[type]) {
+                elem.classList.add('bg-amber-200', 'dark:bg-amber-800', 'text-amber-800', 'dark:text-amber-200');
+            } else {
+                elem.classList.remove('bg-amber-200', 'dark:bg-amber-800', 'text-amber-800', 'dark:text-amber-200');
+            }
+            applyNewMemoStyle();
+        }
+
+        function setNewAlign(align) {
+            newMemoStyle.align = align;
+            applyNewMemoStyle();
+        }
+
+        function applyNewMemoStyle() {
+            const textarea = document.getElementById('newMemoText');
+            textarea.style.fontWeight = newMemoStyle.bold ? 'bold' : 'normal';
+            textarea.style.fontStyle = newMemoStyle.italic ? 'italic' : 'normal';
+            textarea.style.textDecoration = newMemoStyle.underline ? 'underline' : 'none';
+            textarea.style.textAlign = newMemoStyle.align;
+            textarea.style.color = document.getElementById('newMemoColor').value;
+
+            const fontSizes = { xs: '12px', sm: '14px', base: '16px', lg: '18px' };
+            textarea.style.fontSize = fontSizes[document.getElementById('newMemoFontSize').value] || '14px';
+        }
+
+        function saveNewMemo() {
+            const text = document.getElementById('newMemoText').value.trim();
+            if (!text) {
+                alert('메모 내용을 입력해주세요.');
+                return;
+            }
+
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const date = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+
+            // 첫 메모이거나 아무것도 Pin 안된 경우 자동 Pin
+            const hasPinned = memoList.some(m => m.isPinned);
+
+            const newMemo = {
+                id: Date.now(),
+                date: `${year}.${month}.${date}`,
+                time: `${hours}:${minutes}`,
+                text: text,
+                fontSize: document.getElementById('newMemoFontSize').value,
+                color: document.getElementById('newMemoColor').value,
+                bold: newMemoStyle.bold,
+                italic: newMemoStyle.italic,
+                underline: newMemoStyle.underline,
+                align: newMemoStyle.align,
+                isPinned: !hasPinned
+            };
+
+            memoList.unshift(newMemo);
+            saveMemosToStorage();
+
+            closeNewMemoEditor();
+            alert('새 메모가 저장되었습니다.');
+        }
+
+        // 메모 모달 전체화면 View 조작
+        function openMemoViewModal() {
+            document.getElementById('memoViewModal').classList.remove('hidden');
+            backToMemoList();
+            renderMemoList();
+            lucide.createIcons();
+        }
+
+        function closeMemoViewModal() {
+            document.getElementById('memoViewModal').classList.add('hidden');
+        }
+
+        // 메모 목록 렌더링 (Pin 고정 메모 최상단, 나머지 최신순)
+        function renderMemoList() {
+            const listContainer = document.getElementById('memoListView');
+            const keyword = document.getElementById('memoSearchInput').value.trim().toLowerCase();
+
+            let filtered = memoList.filter(m => 
+                m.date.toLowerCase().includes(keyword) || 
+                m.text.toLowerCase().includes(keyword)
+            );
+
+            // Pin 고정 메모가 맨 위로 정렬되도록 배열 소팅
+            filtered.sort((a, b) => {
+                if (a.isPinned && !b.isPinned) return -1;
+                if (!a.isPinned && b.isPinned) return 1;
+                return b.id - a.id;
+            });
+
+            listContainer.innerHTML = '';
+
+            if (filtered.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="text-center py-12 text-xs text-gray-400 font-medium">
+                        저장된 메모가 없습니다.
+                    </div>
+                `;
+                return;
+            }
+
+            filtered.forEach(memo => {
+                const lines = memo.text.split('\n').slice(0, 3).join('\n');
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-2xl bg-white dark:bg-brand-cardDark border ${memo.isPinned ? 'border-amber-400 dark:border-amber-500/50 shadow-md' : 'border-gray-200 dark:border-gray-800/80 shadow-sm'} hover:border-amber-400 transition cursor-pointer space-y-1.5`;
+                card.onclick = () => openMemoDetail(memo.id);
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-center text-[11px] font-bold text-amber-600 dark:text-amber-400">
+                        <span class="flex items-center gap-1">${memo.isPinned ? '📌 ' : ''}${memo.date} ${memo.time}</span>
+                        <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-gray-400"></i>
+                    </div>
+                    <div class="text-xs text-gray-700 dark:text-gray-300 font-medium whitespace-pre-line line-clamp-3 leading-relaxed">
+                        ${lines}
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        // 메모 상세보기
+        function openMemoDetail(id) {
+            currentDetailMemoId = id;
+            const memo = memoList.find(m => m.id === id);
+            if (!memo) return;
+
+            document.getElementById('memoListView').classList.add('hidden');
+            document.getElementById('memoSearchContainer').classList.add('hidden');
+            document.getElementById('memoDetailView').classList.remove('hidden');
+            document.getElementById('modalHeaderTitle').innerText = '메모 상세보기';
+
+            document.getElementById('detailMemoDateTime').innerText = `작성일시: ${memo.date} ${memo.time}`;
+
+            const badge = document.getElementById('detailMemoPinnedBadge');
+            if (memo.isPinned) {
+                badge.classList.remove('hidden');
+                document.getElementById('btnMemoPinToggleText').innerText = 'Pin 해제';
+            } else {
+                badge.classList.add('hidden');
+                document.getElementById('btnMemoPinToggleText').innerText = 'Pin 고정';
+            }
+
+            const readBox = document.getElementById('detailMemoReadBox');
+            readBox.innerText = memo.text;
+
+            const fontSizes = { xs: '12px', sm: '14px', base: '16px', lg: '18px' };
+            readBox.style.fontSize = fontSizes[memo.fontSize] || '14px';
+            readBox.style.color = memo.color || '#374151';
+            readBox.style.fontWeight = memo.bold ? 'bold' : 'normal';
+            readBox.style.fontStyle = memo.italic ? 'italic' : 'normal';
+            readBox.style.textDecoration = memo.underline ? 'underline' : 'none';
+            readBox.style.textAlign = memo.align || 'left';
+
+            isDetailEditing = false;
+            document.getElementById('detailMemoReadBox').classList.remove('hidden');
+            document.getElementById('detailMemoEditBox').classList.add('hidden');
+            document.getElementById('btnMemoEditToggleText').innerText = '수정';
+        }
+
+        function togglePinCurrentMemo() {
+            const memo = memoList.find(m => m.id === currentDetailMemoId);
+            if (!memo) return;
+
+            if (memo.isPinned) {
+                memo.isPinned = false;
+            } else {
+                // 단일 Pin 보장: 기존 Pinned 메모 모두 해제
+                memoList.forEach(m => m.isPinned = false);
+                memo.isPinned = true;
+            }
+
+            saveMemosToStorage();
+            openMemoDetail(currentDetailMemoId);
+        }
+
+        function backToMemoList() {
+            document.getElementById('memoListView').classList.remove('hidden');
+            document.getElementById('memoSearchContainer').classList.remove('hidden');
+            document.getElementById('memoDetailView').classList.add('hidden');
+            document.getElementById('modalHeaderTitle').innerText = '메모장 히스토리';
+            renderMemoList();
+        }
+
+        // 상세보기 내 수정 모드 조작
+        function toggleEditDetailMemo() {
+            isDetailEditing = !isDetailEditing;
+            const memo = memoList.find(m => m.id === currentDetailMemoId);
+            if (!memo) return;
+
+            if (isDetailEditing) {
+                document.getElementById('detailMemoReadBox').classList.add('hidden');
+                document.getElementById('detailMemoEditBox').classList.remove('hidden');
+                document.getElementById('btnMemoEditToggleText').innerText = '취소';
+
+                document.getElementById('editMemoText').value = memo.text;
+                document.getElementById('editMemoFontSize').value = memo.fontSize || 'sm';
+                document.getElementById('editMemoColor').value = memo.color || '#374151';
+
+                editMemoStyle = {
+                    bold: !!memo.bold,
+                    italic: !!memo.italic,
+                    underline: !!memo.underline,
+                    align: memo.align || 'left'
+                };
+
+                updateEditToolbarUI();
+                applyEditMemoStyle();
+            } else {
+                document.getElementById('detailMemoReadBox').classList.remove('hidden');
+                document.getElementById('detailMemoEditBox').classList.add('hidden');
+                document.getElementById('btnMemoEditToggleText').innerText = '수정';
+            }
+        }
+
+        function toggleEditOption(type) {
+            editMemoStyle[type] = !editMemoStyle[type];
+            updateEditToolbarUI();
+            applyEditMemoStyle();
+        }
+
+        function setEditAlign(align) {
+            editMemoStyle.align = align;
+            applyEditMemoStyle();
+        }
+
+        function updateEditToolbarUI() {
+            const btnMap = { bold: 'btnEditBold', italic: 'btnEditItalic', underline: 'btnEditUnderline' };
+            ['bold', 'italic', 'underline'].forEach(type => {
+                const elem = document.getElementById(btnMap[type]);
+                if (editMemoStyle[type]) {
+                    elem.classList.add('bg-amber-200', 'dark:bg-amber-800', 'text-amber-800', 'dark:text-amber-200');
+                } else {
+                    elem.classList.remove('bg-amber-200', 'dark:bg-amber-800', 'text-amber-800', 'dark:text-amber-200');
+                }
+            });
+        }
+
+        function applyEditMemoStyle() {
+            const textarea = document.getElementById('editMemoText');
+            textarea.style.fontWeight = editMemoStyle.bold ? 'bold' : 'normal';
+            textarea.style.fontStyle = editMemoStyle.italic ? 'italic' : 'normal';
+            textarea.style.textDecoration = editMemoStyle.underline ? 'underline' : 'none';
+            textarea.style.textAlign = editMemoStyle.align;
+            textarea.style.color = document.getElementById('editMemoColor').value;
+
+            const fontSizes = { xs: '12px', sm: '14px', base: '16px', lg: '18px' };
+            textarea.style.fontSize = fontSizes[document.getElementById('editMemoFontSize').value] || '14px';
+        }
+
+        function saveUpdatedMemo() {
+            const index = memoList.findIndex(m => m.id === currentDetailMemoId);
+            if (index === -1) return;
+
+            const text = document.getElementById('editMemoText').value.trim();
+            if (!text) {
+                alert('메모 내용을 입력해주세요.');
+                return;
+            }
+
+            memoList[index].text = text;
+            memoList[index].fontSize = document.getElementById('editMemoFontSize').value;
+            memoList[index].color = document.getElementById('editMemoColor').value;
+            memoList[index].bold = editMemoStyle.bold;
+            memoList[index].italic = editMemoStyle.italic;
+            memoList[index].underline = editMemoStyle.underline;
+            memoList[index].align = editMemoStyle.align;
+
+            saveMemosToStorage();
+            alert('메모가 수정되었습니다.');
+            openMemoDetail(currentDetailMemoId);
+        }
+
+        function deleteCurrentDetailMemo() {
+            if (confirm("이 메모를 삭제하시겠습니까?")) {
+                memoList = memoList.filter(m => m.id !== currentDetailMemoId);
+                saveMemosToStorage();
+                alert('메모가 삭제되었습니다.');
+                backToMemoList();
+            }
+        }
+
+        // --- 계좌 & 차트 데이터 ---
+        let accountDataListRaw = [
             { account: "나무(CMA)", stock: "하이닉스 밸류체인 ETF", amount: 74944150 },
             { account: "나무(ISA)", stock: "하이닉스 밸류체인 ETF", amount: 25743575 },
             { account: "미래(CMA)", stock: "하이닉스 밸류체인 ETF", amount: 13245190 },
@@ -454,7 +875,7 @@
             { account: "미래(CMA)", stock: "현금", amount: 0 }
         ];
 
-        const defaultTrendRawData = [
+        let trendRawDataListRaw = [
             { date: '26.02.08', account: '나무(CMA)', amount: 388326139 },
             { date: '26.02.08', account: '나무(ISA)', amount: 108938392 },
             { date: '26.02.08', account: '미래(통합)', amount: 197217402 },
@@ -497,7 +918,7 @@
             { date: '26.07.25', account: '삼성증권', amount: 13043455 }
         ];
 
-        const defaultPnlDataList = [
+        let pnlDataListRaw = [
             { year: '2020년', account: '나무(CMA)', amount: 10693877 },
             { year: '2021년', account: '나무(CMA)', amount: 62980627 },
             { year: '2022년', account: '나무(CMA)', amount: 9137431 },
@@ -514,202 +935,29 @@
             { year: '2026년', account: '미래(ISA)', amount: -20869767 }
         ];
 
-        const defaultYtdDataList = [
-            {
-                date: '26.07.30',
-                items: [
-                    { name: '확정손익', amount: 113026477 },
-                    { name: '나무(CMA) 평가손익', amount: -137370044 },
-                    { name: '나무(ISA) 평가손익', amount: 5251616 },
-                    { name: '미래(통합) 평가손익', amount: 133595271 }
-                ]
-            }
-        ];
+        // 암호화 문자열 생성
+        const encryptedAccountStr = CryptoJS.AES.encrypt(JSON.stringify(accountDataListRaw), "0713").toString();
+        const encryptedTrendStr = CryptoJS.AES.encrypt(JSON.stringify(trendRawDataListRaw), "0713").toString();
+        const encryptedPnlStr = CryptoJS.AES.encrypt(JSON.stringify(pnlDataListRaw), "0713").toString();
 
-        const defaultTopMemoConfig = {
-            text: '',
-            fontSize: '14px',
-            color: '#1f2937',
-            isBold: false,
-            isItalic: false,
-            isUnderline: false,
-            align: 'left'
-        };
+        let accountDataList = JSON.parse(JSON.stringify(accountDataListRaw));
+        let trendRawData = JSON.parse(JSON.stringify(trendRawDataListRaw));
+        let pnlDataList = JSON.parse(JSON.stringify(pnlDataListRaw));
 
-        let topMemoConfig = { ...defaultTopMemoConfig };
-        let trendMemoText = defaultTrendMemoText;
-        let accountDataList = [];
-        let trendRawData = [];
-        let pnlDataList = [];
-        let ytdDataList = [];
-        let selectedYtdDate = '26.07.30';
+        function decryptData(pw) {
+            try {
+                let decAccount = CryptoJS.AES.decrypt(encryptedAccountStr, pw).toString(CryptoJS.enc.Utf8);
+                let decTrend = CryptoJS.AES.decrypt(encryptedTrendStr, pw).toString(CryptoJS.enc.Utf8);
+                let decPnl = CryptoJS.AES.decrypt(encryptedPnlStr, pw).toString(CryptoJS.enc.Utf8);
 
-        let tempYtdItems = [];
+                if (!decAccount || !decTrend || !decPnl) return false;
 
-        function saveAllToLocalStorage() {
-            const stateObj = {
-                topMemoConfig,
-                trendMemoText,
-                accountDataList,
-                trendRawData,
-                pnlDataList,
-                ytdDataList
-            };
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(stateObj));
-        }
-
-        function loadFromLocalStorage() {
-            const stored = localStorage.getItem(STORAGE_KEY);
-            if (stored) {
-                try {
-                    const parsed = JSON.parse(stored);
-                    topMemoConfig = parsed.topMemoConfig || { ...defaultTopMemoConfig };
-                    trendMemoText = parsed.trendMemoText ?? defaultTrendMemoText;
-                    accountDataList = parsed.accountDataList || JSON.parse(JSON.stringify(defaultAccountDataList));
-                    trendRawData = parsed.trendRawData || JSON.parse(JSON.stringify(defaultTrendRawData));
-                    pnlDataList = parsed.pnlDataList || JSON.parse(JSON.stringify(defaultPnlDataList));
-                    
-                    if (parsed.ytdDataList && parsed.ytdDataList.length > 0) {
-                        ytdDataList = parsed.ytdDataList.map(item => {
-                            if (item.items && Array.isArray(item.items)) {
-                                return item;
-                            } else {
-                                return {
-                                    date: item.date,
-                                    items: [
-                                        { name: '확정손익', amount: item.realized || 0 },
-                                        { name: '나무(CMA) 평가손익', amount: item.namuCma || 0 },
-                                        { name: '나무(ISA) 평가손익', amount: item.namuIsa || 0 },
-                                        { name: '미래(통합) 평가손익', amount: item.mirae || 0 }
-                                    ]
-                                };
-                            }
-                        });
-                    } else {
-                        ytdDataList = JSON.parse(JSON.stringify(defaultYtdDataList));
-                    }
-
-                    if (ytdDataList.length > 0) {
-                        selectedYtdDate = ytdDataList[ytdDataList.length - 1].date;
-                    }
-                    return;
-                } catch(e) {
-                    console.error("Failed to parse localStorage data", e);
-                }
-            }
-
-            topMemoConfig = { ...defaultTopMemoConfig };
-            trendMemoText = defaultTrendMemoText;
-            accountDataList = JSON.parse(JSON.stringify(defaultAccountDataList));
-            trendRawData = JSON.parse(JSON.stringify(defaultTrendRawData));
-            pnlDataList = JSON.parse(JSON.stringify(defaultPnlDataList));
-            ytdDataList = JSON.parse(JSON.stringify(defaultYtdDataList));
-            selectedYtdDate = '26.07.30';
-        }
-
-        /* --- 상단 메모 토글 및 서식 제어 --- */
-        function initTopMemoUI() {
-            const viewElem = document.getElementById("topMemoView");
-            const textarea = document.getElementById("topMemoTextarea");
-            const selectSize = document.getElementById("memoFontSize");
-            const inputColor = document.getElementById("memoColor");
-
-            textarea.value = topMemoConfig.text || "";
-            viewElem.innerText = topMemoConfig.text || "";
-
-            selectSize.value = topMemoConfig.fontSize || "14px";
-            inputColor.value = topMemoConfig.color || "#1f2937";
-
-            applyMemoStyleToDOM();
-        }
-
-        function toggleTopMemoEdit() {
-            isTopMemoEditMode = !isTopMemoEditMode;
-
-            const btnText = document.getElementById("topMemoBtnText");
-            const btnIcon = document.getElementById("topMemoBtnIcon");
-            const toolbar = document.getElementById("topMemoToolbar");
-            const viewElem = document.getElementById("topMemoView");
-            const textarea = document.getElementById("topMemoTextarea");
-
-            if (isTopMemoEditMode) {
-                btnText.innerText = "Done";
-                btnIcon.setAttribute("data-lucide", "check");
-                toolbar.classList.remove("hidden");
-                textarea.classList.remove("hidden");
-                viewElem.classList.add("hidden");
-                textarea.value = topMemoConfig.text;
-            } else {
-                topMemoConfig.text = textarea.value;
-                viewElem.innerText = textarea.value;
-
-                btnText.innerText = "Edit";
-                btnIcon.setAttribute("data-lucide", "pencil");
-                toolbar.classList.add("hidden");
-                textarea.classList.add("hidden");
-                viewElem.classList.remove("hidden");
-
-                saveAllToLocalStorage();
-            }
-            lucide.createIcons();
-        }
-
-        function applyMemoStyle() {
-            const selectSize = document.getElementById("memoFontSize");
-            const inputColor = document.getElementById("memoColor");
-
-            topMemoConfig.fontSize = selectSize.value;
-            topMemoConfig.color = inputColor.value;
-
-            applyMemoStyleToDOM();
-            saveAllToLocalStorage();
-        }
-
-        function toggleStyleState(styleType) {
-            if (styleType === 'bold') topMemoConfig.isBold = !topMemoConfig.isBold;
-            if (styleType === 'italic') topMemoConfig.isItalic = !topMemoConfig.isItalic;
-            if (styleType === 'underline') topMemoConfig.isUnderline = !topMemoConfig.isUnderline;
-
-            applyMemoStyleToDOM();
-            saveAllToLocalStorage();
-        }
-
-        function setMemoAlign(align) {
-            topMemoConfig.align = align;
-            applyMemoStyleToDOM();
-            saveAllToLocalStorage();
-        }
-
-        function applyMemoStyleToDOM() {
-            const textarea = document.getElementById("topMemoTextarea");
-            const viewElem = document.getElementById("topMemoView");
-
-            [textarea, viewElem].forEach(elem => {
-                if (!elem) return;
-                elem.style.fontSize = topMemoConfig.fontSize;
-                elem.style.color = topMemoConfig.color;
-                elem.style.fontWeight = topMemoConfig.isBold ? 'bold' : 'normal';
-                elem.style.fontStyle = topMemoConfig.isItalic ? 'italic' : 'normal';
-                elem.style.textDecoration = topMemoConfig.isUnderline ? 'underline' : 'none';
-                elem.style.textAlign = topMemoConfig.align;
-            });
-
-            updateToolbarButton('btnBold', topMemoConfig.isBold);
-            updateToolbarButton('btnItalic', topMemoConfig.isItalic);
-            updateToolbarButton('btnUnderline', topMemoConfig.isUnderline);
-
-            updateToolbarButton('btnAlignLeft', topMemoConfig.align === 'left');
-            updateToolbarButton('btnAlignCenter', topMemoConfig.align === 'center');
-            updateToolbarButton('btnAlignRight', topMemoConfig.align === 'right');
-        }
-
-        function updateToolbarButton(btnId, isActive) {
-            const btn = document.getElementById(btnId);
-            if (!btn) return;
-            if (isActive) {
-                btn.classList.add("bg-amber-100", "dark:bg-amber-900/50", "text-amber-700", "dark:text-amber-300", "border-amber-300");
-            } else {
-                btn.classList.remove("bg-amber-100", "dark:bg-amber-900/50", "text-amber-700", "dark:text-amber-300", "border-amber-300");
+                accountDataList = JSON.parse(decAccount);
+                trendRawData = JSON.parse(decTrend);
+                pnlDataList = JSON.parse(decPnl);
+                return true;
+            } catch (e) {
+                return false;
             }
         }
 
@@ -743,7 +991,7 @@
                 const inputPassword = prompt("비밀번호를 입력하세요:");
                 if (!inputPassword) return;
 
-                if (inputPassword === secretKey) {
+                if (decryptData(inputPassword)) {
                     isMasked = false;
                 } else {
                     alert("비밀번호가 올바르지 않습니다.");
@@ -753,14 +1001,15 @@
                 isMasked = true;
             }
 
+            const maskBtnText = document.getElementById("maskBtnText");
             const maskIcon = document.getElementById("maskIcon");
 
             if (isMasked) {
-                maskIcon.setAttribute("data-lucide", "eye-off");
-                maskIcon.className = "w-4 h-4 text-gray-500 dark:text-gray-400";
-            } else {
+                maskBtnText.innerText = "Show Amounts";
                 maskIcon.setAttribute("data-lucide", "eye");
-                maskIcon.className = "w-4 h-4 text-blue-500 dark:text-blue-400";
+            } else {
+                maskBtnText.innerText = "Hide Amounts";
+                maskIcon.setAttribute("data-lucide", "lock");
             }
             renderApp();
         }
@@ -768,7 +1017,6 @@
         function updateTrendMemo(val) {
             trendMemoText = val;
             document.getElementById("trendMemoView").innerText = val;
-            saveAllToLocalStorage();
         }
 
         function toggleTrendMemoEdit() {
@@ -790,7 +1038,6 @@
                 view.classList.remove("hidden");
                 edit.classList.add("hidden");
                 view.innerText = trendMemoText;
-                saveAllToLocalStorage();
             }
             lucide.createIcons();
         }
@@ -801,38 +1048,18 @@
             const editBtnText = document.getElementById("editBtnText");
             const editIcon = document.getElementById("editIcon");
             const amountHeader = document.getElementById("table-header-amount");
-            const addContainer = document.getElementById("accountAddBtnContainer");
 
             if (isEditMode) {
                 editBtnText.innerText = "Done";
                 editIcon.setAttribute("data-lucide", "check");
                 btn.className = "px-3 py-1 rounded-xl bg-emerald-600 text-white font-semibold text-xs hover:bg-emerald-700 transition flex items-center gap-1";
                 amountHeader.innerText = "매입금액 ↕";
-                if (addContainer) addContainer.classList.remove("hidden");
             } else {
                 editBtnText.innerText = "Edit";
                 editIcon.setAttribute("data-lucide", "pencil");
                 btn.className = "px-3 py-1 rounded-xl bg-blue-600 text-white font-semibold text-xs hover:bg-blue-700 transition flex items-center gap-1";
                 amountHeader.innerText = "매입금액 (비중) ↕";
-                if (addContainer) addContainer.classList.add("hidden");
-                saveAllToLocalStorage();
             }
-            renderApp();
-        }
-
-        function addNewAccountRow() {
-            accountDataList.push({
-                account: "신규 계좌",
-                stock: "신규 종목",
-                amount: 0
-            });
-            saveAllToLocalStorage();
-            renderApp();
-        }
-
-        function deleteAccountRow(idx) {
-            accountDataList.splice(idx, 1);
-            saveAllToLocalStorage();
             renderApp();
         }
 
@@ -854,7 +1081,6 @@
                 editIcon.setAttribute("data-lucide", "pencil");
                 btn.className = "px-3 py-1 rounded-xl bg-blue-600 text-white font-semibold text-xs hover:bg-blue-700 transition flex items-center gap-1";
                 container.classList.add("hidden");
-                saveAllToLocalStorage();
             }
             renderApp();
         }
@@ -865,9 +1091,9 @@
             pnlDataList.forEach((item, index) => {
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
-                    <td class="py-1.5 pr-1"><input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 text-xs font-medium" value="${item.year}" oninput="updatePnlItem(${index}, 'year', this.value)"></td>
-                    <td class="py-1.5 px-1"><input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 text-xs font-medium" value="${item.account}" oninput="updatePnlItem(${index}, 'account', this.value)"></td>
-                    <td class="py-1.5 px-1"><input type="number" class="w-full text-right bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 text-xs font-medium" value="${item.amount}" oninput="updatePnlItem(${index}, 'amount', this.value)"></td>
+                    <td class="py-1.5 pr-1"><input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 text-xs font-medium" value="${item.year}" onchange="updatePnlItem(${index}, 'year', this.value)"></td>
+                    <td class="py-1.5 px-1"><input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 text-xs font-medium" value="${item.account}" onchange="updatePnlItem(${index}, 'account', this.value)"></td>
+                    <td class="py-1.5 px-1"><input type="number" class="w-full text-right bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 text-xs font-medium" value="${item.amount}" onchange="updatePnlItem(${index}, 'amount', this.value)"></td>
                     <td class="py-1.5 pl-1 text-center"><button type="button" onclick="deletePnlItem(${index})" class="text-gray-400 hover:text-red-500 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button></td>
                 `;
                 tbody.appendChild(tr);
@@ -876,297 +1102,24 @@
         }
 
         function updatePnlItem(index, key, value) {
-            if (!pnlDataList[index]) return;
             if (key === 'year' || key === 'account') {
-                pnlDataList[index][key] = value;
+                pnlDataList[index][key] = value.trim();
             } else {
                 pnlDataList[index].amount = Number(value) || 0;
             }
-            saveAllToLocalStorage();
+            renderApp();
         }
 
         function deletePnlItem(index) {
             pnlDataList.splice(index, 1);
-            saveAllToLocalStorage();
             renderPnlEditTable();
             renderApp();
         }
 
         function addPnlRow() {
             pnlDataList.push({ year: '2026년', account: '나무(CMA)', amount: 0 });
-            saveAllToLocalStorage();
             renderPnlEditTable();
             renderApp();
-        }
-
-        function openYtdModal() {
-            document.getElementById("inputYtdDate").value = selectedYtdDate || "26.07.30";
-            const currentObj = ytdDataList.find(item => item.date === selectedYtdDate) || ytdDataList[ytdDataList.length - 1];
-            
-            if (currentObj && currentObj.items) {
-                tempYtdItems = JSON.parse(JSON.stringify(currentObj.items));
-            } else {
-                tempYtdItems = [
-                    { name: '확정손익', amount: 113026477 },
-                    { name: '나무(CMA) 평가손익', amount: -137370044 },
-                    { name: '나무(ISA) 평가손익', amount: 5251616 },
-                    { name: '미래(통합) 평가손익', amount: 133595271 }
-                ];
-            }
-
-            renderYtdDynamicInputFields();
-            renderYtdHistoryList();
-            document.getElementById("ytdModal").classList.remove("hidden");
-            lucide.createIcons();
-        }
-
-        function closeYtdModal() {
-            document.getElementById("ytdModal").classList.add("hidden");
-        }
-
-        function renderYtdDynamicInputFields() {
-            const container = document.getElementById("ytdDynamicFields");
-            container.innerHTML = "";
-
-            tempYtdItems.forEach((item, index) => {
-                const div = document.createElement("div");
-                div.className = "flex items-center gap-1.5 bg-white dark:bg-gray-800 p-1.5 rounded-xl border border-gray-200 dark:border-gray-700";
-                div.innerHTML = `
-                    <input type="text" placeholder="항목명" value="${item.name}" oninput="tempYtdItems[${index}].name = this.value" class="w-1/2 bg-transparent text-xs p-1 focus:outline-none font-medium border-b border-transparent focus:border-blue-500">
-                    <input type="number" placeholder="금액" value="${item.amount}" oninput="tempYtdItems[${index}].amount = Number(this.value) || 0" class="w-1/2 bg-transparent text-xs p-1 text-right focus:outline-none font-medium border-b border-transparent focus:border-blue-500">
-                    <button type="button" onclick="removeYtdDynamicInputRow(${index})" class="text-gray-400 hover:text-red-500 p-1 shrink-0" title="삭제">
-                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                    </button>
-                `;
-                container.appendChild(div);
-            });
-            lucide.createIcons();
-        }
-
-        function addYtdDynamicInputRow() {
-            tempYtdItems.push({ name: '새 항목', amount: 0 });
-            renderYtdDynamicInputFields();
-        }
-
-        function removeYtdDynamicInputRow(index) {
-            tempYtdItems.splice(index, 1);
-            renderYtdDynamicInputFields();
-        }
-
-        function renderYtdHistoryList() {
-            const listContainer = document.getElementById("ytdHistoryList");
-            listContainer.innerHTML = "";
-            ytdDataList.forEach((item, index) => {
-                const div = document.createElement("div");
-                div.className = "flex items-center justify-between p-2 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-xs";
-                div.innerHTML = `
-                    <span class="font-bold text-gray-700 dark:text-gray-300">${item.date}</span>
-                    <div class="flex items-center gap-2">
-                        <button onclick="editYtdFromList('${item.date}')" class="text-blue-500 hover:underline font-medium text-[11px]">수정</button>
-                        <button onclick="deleteYtdRecord(${index})" class="text-red-500 hover:text-red-700 p-0.5"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
-                    </div>
-                `;
-                listContainer.appendChild(div);
-            });
-            lucide.createIcons();
-        }
-
-        function editYtdFromList(dateStr) {
-            const item = ytdDataList.find(d => d.date === dateStr);
-            if (item) {
-                document.getElementById("inputYtdDate").value = item.date;
-                tempYtdItems = JSON.parse(JSON.stringify(item.items || []));
-                renderYtdDynamicInputFields();
-            }
-        }
-
-        function saveYtdRecord() {
-            const date = document.getElementById("inputYtdDate").value.trim();
-            if (!date) {
-                alert("날짜를 입력해주세요.");
-                return;
-            }
-
-            const existingIdx = ytdDataList.findIndex(item => item.date === date);
-            const newRecord = { 
-                date, 
-                items: JSON.parse(JSON.stringify(tempYtdItems)) 
-            };
-
-            if (existingIdx >= 0) {
-                ytdDataList[existingIdx] = newRecord;
-            } else {
-                ytdDataList.push(newRecord);
-            }
-
-            selectedYtdDate = date;
-            saveAllToLocalStorage();
-            closeYtdModal();
-            renderApp();
-        }
-
-        function deleteYtdRecord(index) {
-            if (ytdDataList.length <= 1) {
-                alert("최소 1개 이상의 손익 데이터가 필요합니다.");
-                return;
-            }
-            ytdDataList.splice(index, 1);
-            if (!ytdDataList.find(item => item.date === selectedYtdDate)) {
-                selectedYtdDate = ytdDataList[ytdDataList.length - 1].date;
-            }
-            saveAllToLocalStorage();
-            renderYtdHistoryList();
-            renderApp();
-        }
-
-        function shiftYtdDate(direction) {
-            if (ytdDataList.length === 0) return;
-            const currentIdx = ytdDataList.findIndex(item => item.date === selectedYtdDate);
-            let nextIdx = currentIdx + direction;
-            if (nextIdx < 0) nextIdx = 0;
-            if (nextIdx >= ytdDataList.length) nextIdx = ytdDataList.length - 1;
-            selectedYtdDate = ytdDataList[nextIdx].date;
-            renderApp();
-        }
-
-        function selectYtdDate(dateVal) {
-            selectedYtdDate = dateVal;
-            renderApp();
-        }
-
-        function formatPnlText(elem, value) {
-            if (!elem) return;
-            
-            if (isMasked) {
-                elem.innerText = "******원";
-                elem.className = "font-bold text-gray-800 dark:text-gray-200";
-                return;
-            }
-
-            const prefix = value > 0 ? "+" : "";
-            elem.innerText = `${prefix}${value.toLocaleString()}원`;
-
-            if (value > 0) {
-                elem.className = "font-bold text-red-500 dark:text-red-400";
-            } else if (value < 0) {
-                elem.className = "font-bold text-blue-500 dark:text-blue-400";
-            } else {
-                elem.className = "font-bold text-gray-800 dark:text-gray-200";
-            }
-        }
-
-        function updateYtdChartAndSummary() {
-            const selector = document.getElementById("ytdDateSelector");
-            selector.innerHTML = "";
-            ytdDataList.forEach(item => {
-                const opt = document.createElement("option");
-                opt.value = item.date;
-                opt.innerText = item.date;
-                if (item.date === selectedYtdDate) opt.selected = true;
-                selector.appendChild(opt);
-            });
-
-            const activeData = ytdDataList.find(item => item.date === selectedYtdDate) || ytdDataList[ytdDataList.length - 1];
-
-            if (!activeData) return;
-
-            const activeItems = activeData.items || [];
-            const activeTotal = activeItems.reduce((sum, item) => sum + item.amount, 0);
-
-            const totalElem = document.getElementById("ytd-total-amount");
-            formatPnlText(totalElem, activeTotal);
-
-            const gridContainer = document.getElementById("ytd-items-grid");
-            gridContainer.innerHTML = "";
-
-            activeItems.forEach(item => {
-                const card = document.createElement("div");
-                card.className = "p-2.5 rounded-xl bg-gray-50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800/60";
-                card.innerHTML = `
-                    <span class="text-[10px] text-gray-400 block font-medium truncate">${item.name}</span>
-                    <span class="val-target font-bold">0원</span>
-                `;
-                gridContainer.appendChild(card);
-                formatPnlText(card.querySelector('.val-target'), item.amount);
-            });
-
-            const dates = ytdDataList.map(item => item.date);
-            const totals = ytdDataList.map(item => {
-                const subItems = item.items || [];
-                return subItems.reduce((sum, sub) => sum + sub.amount, 0);
-            });
-            const barColors = totals.map(val => val < 0 ? '#3b82f6' : '#ef4444');
-
-            if (ytdChart) {
-                ytdChart.destroy();
-            }
-
-            const ctx = document.getElementById('ytdBarChart').getContext('2d');
-            ytdChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: dates,
-                    datasets: [{
-                        data: totals,
-                        backgroundColor: barColors,
-                        borderRadius: 4,
-                        barThickness: 18
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    layout: { padding: { right: 85 } },
-                    scales: {
-                        x: { display: false, grid: { display: false } },
-                        y: {
-                            grid: { display: false },
-                            ticks: {
-                                font: { size: 10, weight: '600' },
-                                color: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#4b5563'
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let rawVal = context.raw || 0;
-                                    let valText = isMasked ? '******' : rawVal.toLocaleString() + '원';
-                                    return `누적 손익: ${valText}`;
-                                }
-                            }
-                        },
-                        datalabels: {
-                            anchor: 'end',
-                            align: 'end',
-                            formatter: function(value) {
-                                if (isMasked) return '******';
-                                let absVal = Math.abs(value);
-                                let sign = value < 0 ? '-' : (value > 0 ? '+' : '');
-                                
-                                if (absVal >= 100000000) {
-                                    let eokVal = (absVal / 100000000).toFixed(2);
-                                    return `${sign}${eokVal}억`;
-                                } else {
-                                    let manVal = (absVal / 10000).toFixed(1);
-                                    return `${sign}${manVal}만`;
-                                }
-                            },
-                            backgroundColor: '#000000',
-                            color: function(context) {
-                                let val = context.dataset.data[context.dataIndex];
-                                return val < 0 ? '#60a5fa' : '#ff6b6b';
-                            },
-                            borderRadius: 4,
-                            padding: { top: 2, bottom: 2, left: 5, right: 5 },
-                            font: { size: 9.5, weight: 'bold' }
-                        }
-                    }
-                }
-            });
         }
 
         function openTrendModal() {
@@ -1230,7 +1183,6 @@
                 return;
             }
 
-            saveAllToLocalStorage();
             closeTrendModal();
             renderApp();
         }
@@ -1243,6 +1195,7 @@
             return result.join('\n');
         }
 
+        // 파이차트 렌더링
         function updateChart(sortedStocks, grandTotal) {
             const labels = sortedStocks.map(item => item[0]);
             const dataValues = sortedStocks.map(item => item[1]);
@@ -1304,53 +1257,10 @@
             });
         }
 
-        function renderTrendSummary(dates, trendsData) {
-            const rangeElem = document.getElementById("trend-summary-range");
-            const descElem = document.getElementById("trend-summary-desc");
-            const diffElem = document.getElementById("trend-summary-diff");
-            const rateElem = document.getElementById("trend-summary-rate");
-
-            if (!dates || dates.length === 0) {
-                diffElem.innerText = isMasked ? "******원" : "+0원";
-                rateElem.innerText = isMasked ? "(+***.**%)" : "(+0.00%)";
-                return;
-            }
-
-            const firstDate = dates[0];
-            const lastDate = dates[dates.length - 1];
-
-            const firstTotal = trendsData.filter(d => d.date === firstDate).reduce((sum, item) => sum + item.amount, 0);
-            const lastTotal = trendsData.filter(d => d.date === lastDate).reduce((sum, item) => sum + item.amount, 0);
-
-            const diff = lastTotal - firstTotal;
-            const rate = firstTotal > 0 ? ((diff / firstTotal) * 100) : 0;
-
-            rangeElem.innerText = `${firstDate} ➔ ${lastDate}`;
-            descElem.innerText = `자산 증감 현황`;
-
-            if (isMasked) {
-                diffElem.innerText = "******원";
-                rateElem.innerText = "(+***.**%)";
-            } else {
-                const prefix = diff >= 0 ? "+" : "";
-                diffElem.innerText = `${prefix}${diff.toLocaleString()}원`;
-                rateElem.innerText = `(${prefix}${rate.toFixed(2)}%)`;
-
-                if (diff < 0) {
-                    diffElem.className = "text-sm font-black text-blue-600 dark:text-blue-400 tracking-tight";
-                    rateElem.className = "text-[11px] font-bold text-blue-600/80 dark:text-blue-400/80";
-                } else {
-                    diffElem.className = "text-sm font-black text-red-600 dark:text-red-400 tracking-tight";
-                    rateElem.className = "text-[11px] font-bold text-red-600/80 dark:text-red-400/80";
-                }
-            }
-        }
-
+        // 주식 평가금 트랜드 차트 렌더링
         function updateTrendChart(trendsData) {
             const dates = [...new Set(trendsData.map(d => d.date))];
             const accounts = [...new Set(trendsData.map(d => d.account))];
-
-            renderTrendSummary(dates, trendsData);
 
             const datasets = accounts.map((acc, idx) => {
                 const data = dates.map(date => {
@@ -1413,7 +1323,9 @@
                                 }
                             }
                         },
-                        datalabels: { display: false }
+                        datalabels: {
+                            display: false
+                        }
                     }
                 },
                 plugins: [{
@@ -1430,7 +1342,9 @@
                                 total += ds.data[index] || 0;
                             });
 
-                            let eokValue = isMasked ? '****** ' : (total / 100000000).toFixed(2) + '억 ';
+                            if (isMasked) return;
+
+                            let eokValue = (total / 100000000).toFixed(2) + '억 ';
                             let baseAmount = 820334933;
                             let ratio = ((total - baseAmount) / baseAmount) * 100;
                             let ratioText = `(${ratio >= 0 ? '+' : ''}${ratio.toFixed(1)}%)`;
@@ -1468,6 +1382,7 @@
             });
         }
 
+        // 누적 확정 손익 바 차트 렌더링
         function updatePnlChart() {
             let groupedMap = {};
             let accountGroupsMap = {};
@@ -1482,9 +1397,7 @@
             const backgroundColors = amounts.map(val => val < 0 ? '#3b82f6' : '#ef4444');
 
             let totalSum = amounts.reduce((acc, cur) => acc + cur, 0);
-            
-            const pnlGrandElem = document.getElementById("pnl-grand-total");
-            formatPnlText(pnlGrandElem, totalSum);
+            document.getElementById("pnl-grand-total").innerText = isMasked ? "******" : totalSum.toLocaleString();
 
             if (pnlChart) {
                 pnlChart.destroy();
@@ -1508,7 +1421,10 @@
                     maintainAspectRatio: false,
                     layout: { padding: { right: 85 } },
                     scales: {
-                        x: { display: false, grid: { display: false } },
+                        x: { 
+                            display: false,
+                            grid: { display: false }
+                        },
                         y: {
                             grid: { display: false },
                             ticks: {
@@ -1553,7 +1469,7 @@
                             backgroundColor: '#000000',
                             color: function(context) {
                                 let val = context.dataset.data[context.dataIndex];
-                                return val < 0 ? '#60a5fa' : '#ff6b6b';
+                                return val < 0 ? '#60a5fa' : '#ffffff';
                             },
                             borderRadius: 4,
                             padding: { top: 2, bottom: 2, left: 5, right: 5 },
@@ -1583,37 +1499,27 @@
 
             currentAccountData.forEach((data, idx) => {
                 const tr = document.createElement("tr");
-                tr.className = "hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors h-9";
+                tr.className = "hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors";
                 const weight = grandTotal > 0 ? ((data.amount / grandTotal) * 100).toFixed(1) : "0.0";
-                const displayVal = isMasked ? "******" : data.amount;
+                const displayVal = isMasked ? "******" : data.amount.toLocaleString();
 
                 if (isEditMode) {
                     tr.innerHTML = `
-                        <td class="py-1 pr-1">
-                            <input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 text-xs font-medium" value="${data.account}" oninput="updateAccountField(${idx}, 'account', this.value)">
-                        </td>
-                        <td class="py-1 px-1">
-                            <input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 text-xs font-medium" value="${data.stock}" oninput="updateAccountField(${idx}, 'stock', this.value)">
-                        </td>
-                        <td class="py-1 pl-1 text-right">
-                            <div class="flex items-center justify-end gap-1">
-                                <input type="number" class="w-full text-right bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 text-xs font-medium" value="${displayVal}" oninput="updateAccountField(${idx}, 'amount', this.value)">
-                                <button type="button" onclick="deleteAccountRow(${idx})" class="text-gray-400 hover:text-red-500 p-0.5 shrink-0" title="삭제">
-                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                                </button>
+                        <td class="py-1.5 pr-1"><input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 text-xs font-medium" value="${data.account}" onchange="updateAccount(${idx}, 'account', this.value)"></td>
+                        <td class="py-1.5 px-1"><input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 text-xs font-medium" value="${data.stock}" onchange="updateAccount(${idx}, 'stock', this.value)"></td>
+                        <td class="py-1.5 pl-1 text-right">
+                            <div class="flex items-center justify-end gap-0.5">
+                                <input type="text" class="w-full text-right bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 text-xs font-medium" value="${displayVal}" oninput="updateAmountInput(this, ${idx})">
+                                <span class="text-xs text-gray-500 shrink-0">원</span>
                             </div>
                         </td>
                     `;
                 } else {
                     tr.innerHTML = `
-                        <td class="py-2 font-medium align-middle">
-                            <span class="fade-text" title="${data.account}">${data.account}</span>
-                        </td>
-                        <td class="py-2 font-medium align-middle">
-                            <span class="fade-text" title="${data.stock}">${data.stock}</span>
-                        </td>
-                        <td class="py-2 text-right align-middle nowrap-amount">
-                            ${displayVal.toLocaleString()}원 <span class="font-bold text-gray-700 dark:text-gray-300 ml-0.5">(${isMasked ? '0.0' : weight}%)</span>
+                        <td class="py-2 font-medium">${data.account}</td>
+                        <td class="py-2 font-medium">${data.stock}</td>
+                        <td class="py-2 text-right">
+                            ${displayVal}원 <span class="font-bold text-gray-700 dark:text-gray-300 ml-0.5">(${isMasked ? '0.0' : weight}%)</span>
                         </td>
                     `;
                 }
@@ -1637,27 +1543,31 @@
                         <span class="w-2.5 h-2.5 rounded-full inline-block shrink-0" style="background-color: ${color}"></span>
                         ${stock}
                     </td>
-                    <td class="py-2 text-right font-medium nowrap-amount">${displayVal}원 <span class="font-bold text-gray-700 dark:text-gray-300 ml-0.5">(${isMasked ? '0.0' : weight}%)</span></td>
+                    <td class="py-2 text-right font-medium">${displayVal}원 <span class="font-bold text-gray-700 dark:text-gray-300 ml-0.5">(${isMasked ? '0.0' : weight}%)</span></td>
                 `;
                 summaryBody.appendChild(tr);
             });
 
             updateChart(sortedStocks, grandTotal);
-            updateYtdChartAndSummary();
             updateTrendChart(currentTrendData);
             updatePnlChart();
+            renderMainPinnedMemo();
             lucide.createIcons();
         }
 
-        /* 입력 중 포커스 유지를 위해 DOM 재생성(renderApp)을 건너뛰고 값만 갱신하는 핵심 수정 함수 */
-        function updateAccountField(index, key, value) {
+        function updateAccount(index, key, value) {
             if (accountDataList[index]) {
-                if (key === 'amount') {
-                    accountDataList[index].amount = Number(value) || 0;
-                } else {
-                    accountDataList[index][key] = value;
-                }
-                saveAllToLocalStorage();
+                accountDataList[index][key] = value.trim();
+                renderApp();
+            }
+        }
+
+        function updateAmountInput(input, index) {
+            if (accountDataList[index]) {
+                let cleanVal = input.value.replace(/[^0-9]/g, "");
+                let number = Number(cleanVal) || 0;
+                accountDataList[index].amount = number;
+                renderApp();
             }
         }
 
@@ -1680,9 +1590,7 @@
         }
 
         window.onload = function() {
-            loadFromLocalStorage();
-            initTopMemoUI();
-            document.getElementById("trendMemoView").innerText = trendMemoText;
+            loadMemosFromStorage();
             renderApp();
         };
     </script>

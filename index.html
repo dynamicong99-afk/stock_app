@@ -54,6 +54,26 @@
 </head>
 <body class="bg-gray-100 dark:bg-brand-darkBg text-gray-900 dark:text-gray-100 min-h-screen p-4 transition-colors duration-300">
 
+    <!-- 페이지 진입 비밀번호 인증 오버레이 화면 -->
+    <div id="authOverlay" class="fixed inset-0 bg-gray-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-brand-cardDark border border-gray-200 dark:border-gray-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl space-y-4 text-center">
+            <div class="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center mx-auto">
+                <i data-lucide="lock" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h3 class="text-base font-black text-gray-900 dark:text-white">잠긴 페이지입니다</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">접속 비밀번호를 입력해주세요.</p>
+            </div>
+            <form onsubmit="handleInitialAuth(event)" class="space-y-3 pt-1">
+                <input type="password" id="initialAuthPassword" placeholder="비밀번호 입력 (4자리)" autofocus class="w-full text-center tracking-widest bg-gray-100 dark:bg-gray-900 px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 text-sm font-bold focus:outline-none focus:border-blue-500 text-gray-900 dark:text-white">
+                <p id="authErrorMsg" class="text-xs text-red-500 font-medium hidden">비밀번호가 올바르지 않습니다.</p>
+                <button type="submit" class="w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition shadow-md">
+                    확인 및 입장
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- 모바일 최적화 컨테이너 -->
     <div class="max-w-[480px] mx-auto space-y-4 pb-12">
 
@@ -467,6 +487,26 @@
         let pnlChart = null;
 
         let trendMemoText = `3/6 : 1억 추가\n5/31 : 주식보상 30주 추가\n6/25 : 1000만원 추가\n7/12 : 주식보상 22주 추가`;
+
+        // --- 페이지 진입 비밀번호 인증 핸들러 ---
+        function handleInitialAuth(event) {
+            event.preventDefault();
+            const pwInput = document.getElementById("initialAuthPassword").value.trim();
+            const errorMsg = document.getElementById("authErrorMsg");
+
+            if (pwInput === "0713") {
+                document.getElementById("authOverlay").classList.add("hidden");
+                errorMsg.classList.add("hidden");
+                // 인증 성공 시점 데이터 초기화 및 렌더링
+                loadMemosFromStorage();
+                loadDetailFullViewStorage();
+                renderApp();
+            } else {
+                errorMsg.classList.remove("hidden");
+                document.getElementById("initialAuthPassword").value = "";
+                document.getElementById("initialAuthPassword").focus();
+            }
+        }
 
         // --- 메모 시스템 state & localStorage 연동 ---
         let memoList = [];
@@ -1728,9 +1768,9 @@
         }
 
         window.onload = function() {
-            loadMemosFromStorage();
-            loadDetailFullViewStorage();
-            renderApp();
+            // 페이지 진입 시 비밀번호 입력란에 포커스
+            document.getElementById("initialAuthPassword").focus();
+            lucide.createIcons();
         };
     </script>
 </body>

@@ -173,6 +173,11 @@
                     계좌별 상세 내역
                 </h3>
                 <div class="flex items-center gap-1.5">
+                    <!-- 정렬 초기화 버튼 -->
+                    <button onclick="resetAccountSort()" title="기본 정렬로 초기화" class="px-2 py-1 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 font-semibold text-[11px] hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center gap-1">
+                        <i data-lucide="arrow-down-up" class="w-3 h-3"></i>
+                        <span>정렬 초기화</span>
+                    </button>
                     <!-- 전체보기 / 축약보기 토글 버튼 (View 모드에서만 표시) -->
                     <button id="detailFullViewBtn" onclick="toggleDetailFullView()" class="px-2.5 py-1 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 font-semibold text-xs hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center gap-1">
                         <i data-lucide="maximize-2" class="w-3 h-3" id="detailFullViewIcon"></i>
@@ -396,7 +401,7 @@
                 <!-- 읽기 모드 영역 -->
                 <div id="detailMemoReadBox" class="p-4 rounded-2xl bg-amber-50/20 dark:bg-gray-900/50 border border-amber-200/50 dark:border-gray-800 whitespace-pre-line leading-relaxed font-medium text-xs"></div>
 
-                <!-- 편집 모드 서식 & 입력 영역 -->
+                <!-- 편집 모드 서식 & 입력 영역 (요청사항 7: 높이 화면의 60~70% 확대 및 최적화) -->
                 <div id="detailMemoEditBox" class="hidden space-y-3">
                     <div class="flex flex-wrap items-center gap-1.5 pt-1 pb-1 border-b border-gray-100 dark:border-gray-800">
                         <select id="editMemoFontSize" onchange="applyEditMemoStyle()" class="text-[11px] bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-1.5 py-1 text-gray-700 dark:text-gray-300">
@@ -421,9 +426,9 @@
                         </div>
                     </div>
 
-                    <textarea id="editMemoText" class="w-full text-xs p-3 rounded-2xl border border-amber-400 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-amber-500 resize-y font-medium" rows="6"></textarea>
+                    <textarea id="editMemoText" class="w-full text-xs p-3 rounded-2xl border border-amber-400 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-amber-500 resize-y font-medium min-h-[60vh]" rows="14"></textarea>
 
-                    <button onclick="saveUpdatedMemo()" class="w-full py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition shadow-sm flex items-center justify-center gap-1">
+                    <button onclick="saveUpdatedMemo()" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition shadow-sm flex items-center justify-center gap-1">
                         <i data-lucide="check" class="w-3.5 h-3.5"></i>
                         <span>수정 완료</span>
                     </button>
@@ -620,6 +625,53 @@
             { year: '2026년', account: 'MR(ISA)', amount: -20869767 }
         ];
 
+        // --- 기본 정렬 로직 (요구사항 2, 3, 4) ---
+        function applyDefaultAccountSort() {
+            // 1단계: 전체 데이터를 기준으로 각 종목별 총 매입금액 계산
+            let stockTotals = {};
+            accountDataList.forEach(item => {
+                let sName = (item.stock || '').trim();
+                if (sName) {
+                    stockTotals[sName] = (stockTotals[sName] || 0) + item.amount;
+                }
+            });
+
+            // 2단계: 종목별 총액 내림차순 정렬 순서 정의 ('현금'은 맨 마지막)
+            let uniqueStocks = Object.keys(stockTotals);
+            uniqueStocks.sort((a, b) => {
+                if (a === '현금') return 1;
+                if (b === '현금') return -1;
+                return (stockTotals[b] || 0) - (stockTotals[a] || 0);
+            });
+
+            let stockRankMap = {};
+            uniqueStocks.forEach((stk, idx) => {
+                stockRankMap[stk] = idx;
+            });
+
+            // 3단계: 계좌별 상세내역 정렬 (1차: 종목 총액 큰 순, 2차: 동일 종목 내 개별 매입금액 큰 순)
+            accountDataList.sort((a, b) => {
+                let sA = (a.stock || '').trim();
+                let sB = (b.stock || '').trim();
+                
+                let rankA = stockRankMap[sA] !== undefined ? stockRankMap[sA] : 999;
+                let rankB = stockRankMap[sB] !== undefined ? stockRankMap[sB] : 999;
+
+                if (rankA !== rankB) {
+                    return rankA - rankB;
+                }
+                // 같은 종목 내에서는 매입금액 큰 순 -> 작은 순
+                return b.amount - a.amount;
+            });
+        }
+
+        // --- 정렬 초기화 버튼 핸들러 (요구사항 1, 2, 5) ---
+        function resetAccountSort() {
+            applyDefaultAccountSort();
+            saveAllDataToStorage();
+            renderApp();
+        }
+
         // --- 로컬 스토리지 통합 저장 및 불러오기 관리 ---
         function saveAllDataToStorage() {
             localStorage.setItem('myStockAccountData', JSON.stringify(accountDataList));
@@ -634,7 +686,11 @@
         function loadAllDataFromStorage() {
             try {
                 const acc = localStorage.getItem('myStockAccountData');
-                if (acc) accountDataList = JSON.parse(acc);
+                if (acc) {
+                    accountDataList = JSON.parse(acc);
+                } else {
+                    applyDefaultAccountSort();
+                }
 
                 const trend = localStorage.getItem('myStockTrendData');
                 if (trend) trendRawData = JSON.parse(trend);
@@ -681,6 +737,7 @@
                 document.getElementById("authOverlay").classList.add("hidden");
                 errorMsg.classList.add("hidden");
                 loadAllDataFromStorage();
+                applyDefaultAccountSort(); // 데이터 불러온 직후 기본 정렬 강제 적용 검증
                 renderApp();
             } else {
                 errorMsg.classList.remove("hidden");
@@ -757,6 +814,9 @@
                 btn.className = "px-3 py-1 rounded-xl bg-blue-600 text-white font-semibold text-xs hover:bg-blue-700 transition flex items-center gap-1";
                 addBtn.classList.add("hidden");
                 fullViewBtn.classList.remove("hidden");
+                
+                // 요구사항 3: 편집 완료(저장) 시 자동으로 기본 정렬 규칙 적용 및 스토리지 저장
+                applyDefaultAccountSort();
                 saveAllDataToStorage();
             }
             renderApp();
@@ -764,12 +824,14 @@
 
         function addNewAccountRow() {
             accountDataList.push({ account: "NH(CMA)", stock: "신규종목", amount: 0 });
+            applyDefaultAccountSort();
             saveAllDataToStorage();
             renderApp();
         }
 
         function deleteAccountRow(index) {
             accountDataList.splice(index, 1);
+            applyDefaultAccountSort();
             saveAllDataToStorage();
             renderApp();
         }
@@ -1330,6 +1392,7 @@
         function updateAccount(index, key, value) {
             if (accountDataList[index]) {
                 accountDataList[index][key] = key === 'amount' ? Number(value) || 0 : value.trim();
+                applyDefaultAccountSort();
                 saveAllDataToStorage();
                 renderApp();
             }
@@ -1338,6 +1401,7 @@
         function updateAccountSilent(index, key, value) {
             if (accountDataList[index]) {
                 accountDataList[index][key] = Number(value) || 0;
+                applyDefaultAccountSort();
                 saveAllDataToStorage();
             }
         }
@@ -1539,6 +1603,9 @@
             memoList.unshift(newMemo);
             saveAllDataToStorage();
 
+            // 요구사항 8 반영: 메인 화면 Pin 메모 영역 즉시 갱신
+            renderMainPinnedMemo();
+
             closeNewMemoEditor();
             alert('새 메모가 저장되었습니다.');
         }
@@ -1657,6 +1724,9 @@
             }
 
             saveAllDataToStorage();
+            
+            // 요구사항 8 반영: 즉시 메인 화면 및 목록 갱신
+            renderMainPinnedMemo();
             openMemoDetail(currentDetailMemoId);
         }
 
@@ -1749,9 +1819,13 @@
             memoList[index].bold = editMemoStyle.bold;
             memoList[index].italic = editMemoStyle.italic;
             memoList[index].underline = editMemoStyle.underline;
-            memoList.style.textAlign = editMemoStyle.align;
+            memoList[index].align = editMemoStyle.align;
 
             saveAllDataToStorage();
+
+            // 요구사항 8 반영: 메인 화면 Pin 메모 및 목록 데이터 즉시 갱신
+            renderMainPinnedMemo();
+
             alert('메모가 수정되었습니다.');
             openMemoDetail(currentDetailMemoId);
         }
@@ -1760,6 +1834,10 @@
             if (confirm("이 메모를 삭제하시겠습니까?")) {
                 memoList = memoList.filter(m => m.id !== currentDetailMemoId);
                 saveAllDataToStorage();
+                
+                // 요구사항 8 반영: 즉시 메인 화면 갱신
+                renderMainPinnedMemo();
+
                 alert('메모가 삭제되었습니다.');
                 backToMemoList();
             }

@@ -113,7 +113,7 @@
                     <thead>
                         <tr class="text-gray-400 border-b border-gray-100 dark:border-gray-800">
                             <th class="pb-2 font-medium">종목명</th>
-                            <th class="pb-2 text-right font-medium w-44">매입금액 (비중)</th>
+                            <th class="pb-2 text-right font-medium w-36">매입금액 (비중)</th>
                         </tr>
                     </thead>
                     <tbody id="stock-summary-body" class="divide-y divide-gray-100 dark:divide-gray-800/60">
@@ -137,10 +137,18 @@
                     <i data-lucide="landmark" class="w-4 h-4 text-purple-500"></i>
                     계좌별 상세 내역
                 </h3>
-                <button id="editToggleBtn" onclick="toggleEditMode()" class="px-3 py-1 rounded-xl bg-blue-600 text-white font-semibold text-xs hover:bg-blue-700 transition flex items-center gap-1">
-                    <i data-lucide="pencil" class="w-3 h-3" id="editIcon"></i>
-                    <span id="editBtnText">Edit</span>
-                </button>
+                <div class="flex items-center gap-1.5">
+                    <!-- 전체보기 / 축약보기 토글 버튼 -->
+                    <button id="detailFullViewBtn" onclick="toggleDetailFullView()" class="px-2.5 py-1 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 font-semibold text-xs hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center gap-1">
+                        <i data-lucide="maximize-2" class="w-3 h-3" id="detailFullViewIcon"></i>
+                        <span id="detailFullViewBtnText">전체보기</span>
+                    </button>
+                    <!-- Edit 버튼 -->
+                    <button id="editToggleBtn" onclick="toggleEditMode()" class="px-3 py-1 rounded-xl bg-blue-600 text-white font-semibold text-xs hover:bg-blue-700 transition flex items-center gap-1">
+                        <i data-lucide="pencil" class="w-3 h-3" id="editIcon"></i>
+                        <span id="editBtnText">Edit</span>
+                    </button>
+                </div>
             </div>
             <p class="text-[10px] text-gray-400 mb-3">[Edit] 버튼으로 신규 추가 및 수정 가능합니다.</p>
             
@@ -148,9 +156,9 @@
                 <table class="w-full text-left text-xs table-fixed">
                     <thead>
                         <tr class="text-gray-400 border-b border-gray-100 dark:border-gray-800">
-                            <th class="pb-2 cursor-pointer hover:text-blue-500 transition select-none w-20" onclick="sortTable(0)">계좌 ↕</th>
+                            <th class="pb-2 cursor-pointer hover:text-blue-500 transition select-none w-16" onclick="sortTable(0)">계좌 ↕</th>
                             <th class="pb-2 cursor-pointer hover:text-blue-500 transition select-none" onclick="sortTable(1)">종목 ↕</th>
-                            <th class="pb-2 text-right cursor-pointer hover:text-blue-500 transition select-none whitespace-nowrap w-44" onclick="sortTable(2)" id="table-header-amount">매입금액 (비중) ↕</th>
+                            <th class="pb-2 text-right cursor-pointer hover:text-blue-500 transition select-none whitespace-nowrap w-28" onclick="sortTable(2)" id="table-header-amount">매입금액 ↕</th>
                             <th id="th-delete-col" class="pb-2 text-center w-8 hidden">삭제</th>
                         </tr>
                     </thead>
@@ -440,6 +448,7 @@
         let isEditMode = false;
         let isPnlEditMode = false;
         let isTrendMemoEditMode = false;
+        let isDetailFullView = false; // 계좌별 상세내역 전체보기 모드 state
 
         let pieChart = null;
         let trendChart = null;
@@ -513,6 +522,59 @@
         function saveMemosToStorage() {
             localStorage.setItem('myStockMemoList', JSON.stringify(memoList));
             renderMainPinnedMemo();
+        }
+
+        // 계좌별 상세내역 보기모드 (축약/전체) localStorage 저장/복원
+        function loadDetailFullViewStorage() {
+            const stored = localStorage.getItem('myStockDetailFullView');
+            isDetailFullView = stored === 'true';
+            updateDetailFullViewBtnUI();
+        }
+
+        function toggleDetailFullView() {
+            isDetailFullView = !isDetailFullView;
+            localStorage.setItem('myStockDetailFullView', isDetailFullView);
+            updateDetailFullViewBtnUI();
+            renderApp();
+        }
+
+        function updateDetailFullViewBtnUI() {
+            const btnText = document.getElementById("detailFullViewBtnText");
+            const icon = document.getElementById("detailFullViewIcon");
+            const amountHeader = document.getElementById("table-header-amount");
+
+            if (isDetailFullView) {
+                btnText.innerText = "축약보기";
+                icon.setAttribute("data-lucide", "minimize-2");
+                if (!isEditMode) amountHeader.style.width = "11rem"; // 44 (176px)
+            } else {
+                btnText.innerText = "전체보기";
+                icon.setAttribute("data-lucide", "maximize-2");
+                if (!isEditMode) amountHeader.style.width = "7rem"; // 28 (112px)
+            }
+            lucide.createIcons();
+        }
+
+        // 만원/억 단위 버림(절사) 축약 포맷터
+        function formatAmountShort(amount) {
+            if (isMasked) return "******";
+            if (amount === 0) return "0원";
+
+            const man = Math.floor(amount / 10000); // 원 단위 절사
+            if (man === 0) return "0원";
+
+            const eok = Math.floor(man / 10000);
+            const remainderMan = man % 10000;
+
+            if (eok > 0) {
+                if (remainderMan > 0) {
+                    return `${eok}억 ${remainderMan.toLocaleString()}만원`;
+                } else {
+                    return `${eok}억원`;
+                }
+            } else {
+                return `${man.toLocaleString()}만원`;
+            }
         }
 
         function renderMainPinnedMemo() {
@@ -847,7 +909,7 @@
             }
         }
 
-        // --- 계좌 & 차트 데이터 (삼성증권 -> SM 변경 반영) ---
+        // --- 계좌 & 차트 데이터 ---
         let accountDataListRaw = [
             { account: "NH(CMA)", stock: "하이닉스 밸류체인 ETF", amount: 74944150 },
             { account: "NH(ISA)", stock: "하이닉스 밸류체인 ETF", amount: 25743575 },
@@ -1051,13 +1113,15 @@
                 editIcon.setAttribute("data-lucide", "check");
                 btn.className = "px-3 py-1 rounded-xl bg-emerald-600 text-white font-semibold text-xs hover:bg-emerald-700 transition flex items-center gap-1";
                 amountHeader.innerText = "매입금액 ↕";
+                amountHeader.style.width = "11rem";
                 addBtn.classList.remove("hidden");
                 deleteColHeader.classList.remove("hidden");
             } else {
                 editBtnText.innerText = "Edit";
                 editIcon.setAttribute("data-lucide", "pencil");
                 btn.className = "px-3 py-1 rounded-xl bg-blue-600 text-white font-semibold text-xs hover:bg-blue-700 transition flex items-center gap-1";
-                amountHeader.innerText = "매입금액 (비중) ↕";
+                amountHeader.innerText = "매입금액 ↕";
+                amountHeader.style.width = isDetailFullView ? "11rem" : "7rem";
                 addBtn.classList.add("hidden");
                 deleteColHeader.classList.add("hidden");
             }
@@ -1512,11 +1576,20 @@
                 const tr = document.createElement("tr");
                 tr.className = "hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors";
                 const weight = grandTotal > 0 ? ((data.amount / grandTotal) * 100).toFixed(1) : "0.0";
-                const displayVal = isMasked ? "******" : data.amount.toLocaleString();
+                
+                // 표출용 금액 문자열 설정 (전체보기 / 축약보기)
+                let displayVal = "";
+                if (isMasked) {
+                    displayVal = "******";
+                } else if (isDetailFullView) {
+                    displayVal = `${data.amount.toLocaleString()}원`;
+                } else {
+                    displayVal = formatAmountShort(data.amount);
+                }
 
                 if (isEditMode) {
                     tr.innerHTML = `
-                        <td class="py-1.5 pr-1 overflow-hidden w-20"><input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 text-xs font-medium" value="${data.account}" onchange="updateAccount(${idx}, 'account', this.value)"></td>
+                        <td class="py-1.5 pr-1 overflow-hidden w-16"><input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 text-xs font-medium" value="${data.account}" onchange="updateAccount(${idx}, 'account', this.value)"></td>
                         <td class="py-1.5 px-1 overflow-hidden"><input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 text-xs font-medium" value="${data.stock}" onchange="updateAccount(${idx}, 'stock', this.value)"></td>
                         <td class="py-1.5 px-1 text-right whitespace-nowrap w-44">
                             <div class="flex items-center justify-end gap-0.5">
@@ -1532,10 +1605,10 @@
                     `;
                 } else {
                     tr.innerHTML = `
-                        <td class="py-2 font-medium truncate w-20 pr-1" title="${data.account}">${data.account}</td>
+                        <td class="py-2 font-medium truncate w-16 pr-1" title="${data.account}">${data.account}</td>
                         <td class="py-2 font-medium truncate pr-1" title="${data.stock}">${data.stock}</td>
-                        <td class="py-2 text-right whitespace-nowrap w-44 font-medium">
-                            ${displayVal}원 <span class="font-bold text-gray-700 dark:text-gray-300 ml-0.5">(${isMasked ? '0.0' : weight}%)</span>
+                        <td class="py-2 text-right whitespace-nowrap font-medium ${isDetailFullView ? 'w-44' : 'w-28'}">
+                            ${displayVal}
                         </td>
                     `;
                 }
@@ -1561,7 +1634,7 @@
                             <span class="truncate">${stock}</span>
                         </div>
                     </td>
-                    <td class="py-2 text-right font-medium whitespace-nowrap w-44">${displayVal}원 <span class="font-bold text-gray-700 dark:text-gray-300 ml-0.5">(${isMasked ? '0.0' : weight}%)</span></td>
+                    <td class="py-2 text-right font-medium whitespace-nowrap w-36">${displayVal}원 <span class="font-bold text-gray-700 dark:text-gray-300 ml-0.5">(${isMasked ? '0.0' : weight}%)</span></td>
                 `;
                 summaryBody.appendChild(tr);
             });
@@ -1606,6 +1679,7 @@
 
         window.onload = function() {
             loadMemosFromStorage();
+            loadDetailFullViewStorage();
             renderApp();
         };
     </script>

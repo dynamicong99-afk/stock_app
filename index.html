@@ -49,9 +49,9 @@
                 MY STOCK ASSETS
             </h1>
             <div class="flex items-center gap-2">
-                <button id="maskToggleBtn" onclick="toggleMask()" class="px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-800 bg-white dark:bg-[#181d2a] text-xs font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition shadow-sm flex items-center gap-1.5">
-                    <i data-lucide="lock" class="w-3.5 h-3.5" id="maskIcon"></i>
-                    <span id="maskBtnText">Hide Amounts</span>
+                <!-- Hide/Show Amounts 눈 아이콘 전용 버튼 -->
+                <button id="maskToggleBtn" onclick="toggleMask()" title="금액 숨기기/보이기" class="p-2 rounded-full border border-gray-300 dark:border-gray-800 bg-white dark:bg-[#181d2a] text-xs hover:bg-gray-50 dark:hover:bg-gray-800 transition shadow-sm flex items-center justify-center">
+                    <i data-lucide="eye" class="w-4 h-4 text-gray-700 dark:text-gray-300" id="maskIcon"></i>
                 </button>
                 <button onclick="toggleDarkMode()" class="p-2 rounded-full border border-gray-300 dark:border-gray-800 bg-white dark:bg-[#181d2a] text-xs hover:bg-gray-50 dark:hover:bg-gray-800 transition shadow-sm flex items-center justify-center">
                     <i data-lucide="moon" class="w-4 h-4 hidden dark:block"></i>
@@ -148,7 +148,7 @@
                 <table class="w-full text-left text-xs table-fixed">
                     <thead>
                         <tr class="text-gray-400 border-b border-gray-100 dark:border-gray-800">
-                            <th class="pb-2 cursor-pointer hover:text-blue-500 transition select-none" onclick="sortTable(0)">계좌 ↕</th>
+                            <th class="pb-2 cursor-pointer hover:text-blue-500 transition select-none w-20" onclick="sortTable(0)">계좌 ↕</th>
                             <th class="pb-2 cursor-pointer hover:text-blue-500 transition select-none" onclick="sortTable(1)">종목 ↕</th>
                             <th class="pb-2 text-right cursor-pointer hover:text-blue-500 transition select-none whitespace-nowrap w-44" onclick="sortTable(2)" id="table-header-amount">매입금액 (비중) ↕</th>
                             <th id="th-delete-col" class="pb-2 text-center w-8 hidden">삭제</th>
@@ -847,90 +847,90 @@
             }
         }
 
-        // --- 계좌 & 차트 데이터 ---
+        // --- 계좌 & 차트 데이터 (삼성증권 -> SM 변경 반영) ---
         let accountDataListRaw = [
-            { account: "나무(CMA)", stock: "하이닉스 밸류체인 ETF", amount: 74944150 },
-            { account: "나무(ISA)", stock: "하이닉스 밸류체인 ETF", amount: 25743575 },
-            { account: "미래(CMA)", stock: "하이닉스 밸류체인 ETF", amount: 13245190 },
-            { account: "미래(ISA)", stock: "하이닉스 밸류체인 ETF", amount: 231700 },
-            { account: "미래(CMA)", stock: "삼성전자", amount: 24971300 },
-            { account: "미래(ISA)", stock: "삼성전자", amount: 20103400 },
-            { account: "나무(CMA)", stock: "삼성전자", amount: 136301000 },
-            { account: "나무(ISA)", stock: "삼성전자", amount: 50771100 },
-            { account: "삼성증권", stock: "삼성전자", amount: 7746000 },
-            { account: "미래 (ISA)", stock: "삼성전자우", amount: 22968800 },
-            { account: "미래(CMA)", stock: "삼성전자우", amount: 23678800 },
-            { account: "나무(CMA)", stock: "삼성전자우", amount: 41437000 },
-            { account: "나무(CMA)", stock: "삼성전자레버리지", amount: 59083615 },
-            { account: "나무(CMA)", stock: "하이닉스레버리지", amount: 61601485 },
-            { account: "나무(CMA)", stock: "TIGER200IT레버리지", amount: 31554710 },
-            { account: "나무(CMA)", stock: "오로스테크놀로지", amount: 60291000 },
-            { account: "나무(CMA)", stock: "테크윙", amount: 49511500 },
-            { account: "나무(ISA)", stock: "디앤디파마텍", amount: 31307300 },
-            { account: "나무(CMA)", stock: "디앤디파마텍", amount: 40923900 },
-            { account: "나무(CMA)", stock: "현금", amount: 0 },
-            { account: "나무(ISA)", stock: "현금", amount: 0 },
-            { account: "미래(CMA)", stock: "현금", amount: 0 }
+            { account: "NH(CMA)", stock: "하이닉스 밸류체인 ETF", amount: 74944150 },
+            { account: "NH(ISA)", stock: "하이닉스 밸류체인 ETF", amount: 25743575 },
+            { account: "MR(CMA)", stock: "하이닉스 밸류체인 ETF", amount: 13245190 },
+            { account: "MR(ISA)", stock: "하이닉스 밸류체인 ETF", amount: 231700 },
+            { account: "MR(CMA)", stock: "삼성전자", amount: 24971300 },
+            { account: "MR(ISA)", stock: "삼성전자", amount: 20103400 },
+            { account: "NH(CMA)", stock: "삼성전자", amount: 136301000 },
+            { account: "NH(ISA)", stock: "삼성전자", amount: 50771100 },
+            { account: "SM", stock: "삼성전자", amount: 7746000 },
+            { account: "MR(ISA)", stock: "삼성전자우", amount: 22968800 },
+            { account: "MR(CMA)", stock: "삼성전자우", amount: 23678800 },
+            { account: "NH(CMA)", stock: "삼성전자우", amount: 41437000 },
+            { account: "NH(CMA)", stock: "삼성전자레버리지", amount: 59083615 },
+            { account: "NH(CMA)", stock: "하이닉스레버리지", amount: 61601485 },
+            { account: "NH(CMA)", stock: "TIGER200IT레버리지", amount: 31554710 },
+            { account: "NH(CMA)", stock: "오로스테크놀로지", amount: 60291000 },
+            { account: "NH(CMA)", stock: "테크윙", amount: 49511500 },
+            { account: "NH(ISA)", stock: "디앤디파마텍", amount: 31307300 },
+            { account: "NH(CMA)", stock: "디앤디파마텍", amount: 40923900 },
+            { account: "NH(CMA)", stock: "현금", amount: 0 },
+            { account: "NH(ISA)", stock: "현금", amount: 0 },
+            { account: "MR(CMA)", stock: "현금", amount: 0 }
         ];
 
         let trendRawDataListRaw = [
-            { date: '26.02.08', account: '나무(CMA)', amount: 388326139 },
-            { date: '26.02.08', account: '나무(ISA)', amount: 108938392 },
-            { date: '26.02.08', account: '미래(통합)', amount: 197217402 },
-            { date: '26.03.06', account: '나무(CMA)', amount: 527553375 },
-            { date: '26.03.06', account: '나무(ISA)', amount: 119398858 },
-            { date: '26.03.06', account: '미래(통합)', amount: 216390179 },
-            { date: '26.04.17', account: '나무(CMA)', amount: 642687983 },
-            { date: '26.04.17', account: '나무(ISA)', amount: 134916276 },
-            { date: '26.04.17', account: '미래(통합)', amount: 253555777 },
-            { date: '26.05.04', account: '나무(CMA)', amount: 729492462 },
-            { date: '26.05.04', account: '나무(ISA)', amount: 146602212 },
-            { date: '26.05.04', account: '미래(통합)', amount: 271490310 },
-            { date: '26.05.31', account: '나무(CMA)', amount: 782153215 },
-            { date: '26.05.31', account: '나무(ISA)', amount: 186165908 },
-            { date: '26.05.31', account: '미래(통합)', amount: 352934530 },
-            { date: '26.05.31', account: '삼성증권', amount: 9555000 },
-            { date: '26.06.08', account: '나무(CMA)', amount: 694119704 },
-            { date: '26.06.08', account: '나무(ISA)', amount: 169065740 },
-            { date: '26.06.08', account: '미래(통합)', amount: 332260962 },
-            { date: '26.06.08', account: '삼성증권', amount: 9045000 },
-            { date: '26.06.19', account: '나무(CMA)', amount: 889401974 },
-            { date: '26.06.19', account: '나무(ISA)', amount: 215442367 },
-            { date: '26.06.19', account: '미래(통합)', amount: 392231108 },
-            { date: '26.06.19', account: '삼성증권', amount: 10515000 },
-            { date: '26.06.25', account: '나무(CMA)', amount: 878112578 },
-            { date: '26.06.25', account: '나무(ISA)', amount: 207978469 },
-            { date: '26.06.25', account: '미래(통합)', amount: 403441629 },
-            { date: '26.06.25', account: '삼성증권', amount: 10785000 },
-            { date: '26.07.12', account: '나무(CMA)', amount: 680697655 },
-            { date: '26.07.12', account: '나무(ISA)', amount: 174504343 },
-            { date: '26.07.12', account: '미래(통합)', amount: 325533171 },
-            { date: '26.07.12', account: '삼성증권', amount: 14898000 },
-            { date: '26.07.19', account: '나무(CMA)', amount: 599307574 },
-            { date: '26.07.19', account: '나무(ISA)', amount: 154723415 },
-            { date: '26.07.19', account: '미래(통합)', amount: 289337503 },
-            { date: '26.07.19', account: '삼성증권', amount: 13182000 },
-            { date: '26.07.25', account: '나무(CMA)', amount: 557392149 },
-            { date: '26.07.25', account: '나무(ISA)', amount: 144412212 },
-            { date: '26.07.25', account: '미래(통합)', amount: 285985526 },
-            { date: '26.07.25', account: '삼성증권', amount: 13043455 }
+            { date: '26.02.08', account: 'NH(CMA)', amount: 388326139 },
+            { date: '26.02.08', account: 'NH(ISA)', amount: 108938392 },
+            { date: '26.02.08', account: 'MR(통합)', amount: 197217402 },
+            { date: '26.03.06', account: 'NH(CMA)', amount: 527553375 },
+            { date: '26.03.06', account: 'NH(ISA)', amount: 119398858 },
+            { date: '26.03.06', account: 'MR(통합)', amount: 216390179 },
+            { date: '26.04.17', account: 'NH(CMA)', amount: 642687983 },
+            { date: '26.04.17', account: 'NH(ISA)', amount: 134916276 },
+            { date: '26.04.17', account: 'MR(통합)', amount: 253555777 },
+            { date: '26.05.04', account: 'NH(CMA)', amount: 729492462 },
+            { date: '26.05.04', account: 'NH(ISA)', amount: 146602212 },
+            { date: '26.05.04', account: 'MR(통합)', amount: 271490310 },
+            { date: '26.05.31', account: 'NH(CMA)', amount: 782153215 },
+            { date: '26.05.31', account: 'NH(ISA)', amount: 186165908 },
+            { date: '26.05.31', account: 'MR(통합)', amount: 352934530 },
+            { date: '26.05.31', account: 'SM', amount: 9555000 },
+            { date: '26.06.08', account: 'NH(CMA)', amount: 694119704 },
+            { date: '26.06.08', account: 'NH(ISA)', amount: 169065740 },
+            { date: '26.06.08', account: 'MR(통합)', amount: 332260962 },
+            { date: '26.06.08', account: 'SM', amount: 9045000 },
+            { date: '26.06.19', account: 'NH(CMA)', amount: 889401974 },
+            { date: '26.06.19', account: 'NH(ISA)', amount: 215442367 },
+            { date: '26.06.19', account: 'MR(통합)', amount: 392231108 },
+            { date: '26.06.19', account: 'SM', amount: 10515000 },
+            { date: '26.06.25', account: 'NH(CMA)', amount: 878112578 },
+            { date: '26.06.25', account: 'NH(ISA)', amount: 207978469 },
+            { date: '26.06.25', account: 'MR(통합)', amount: 403441629 },
+            { date: '26.06.25', account: 'SM', amount: 10785000 },
+            { date: '26.07.12', account: 'NH(CMA)', amount: 680697655 },
+            { date: '26.07.12', account: 'NH(ISA)', amount: 174504343 },
+            { date: '26.07.12', account: 'MR(통합)', amount: 325533171 },
+            { date: '26.07.12', account: 'SM', amount: 14898000 },
+            { date: '26.07.19', account: 'NH(CMA)', amount: 599307574 },
+            { date: '26.07.19', account: 'NH(ISA)', amount: 154723415 },
+            { date: '26.07.19', account: 'MR(통합)', amount: 289337503 },
+            { date: '26.07.19', account: 'SM', amount: 13182000 },
+            { date: '26.07.25', account: 'NH(CMA)', amount: 557392149 },
+            { date: '26.07.25', account: 'NH(ISA)', amount: 144412212 },
+            { date: '26.07.25', account: 'MR(통합)', amount: 285985526 },
+            { date: '26.07.25', account: 'SM', amount: 13043455 }
         ];
 
         let pnlDataListRaw = [
-            { year: '2020년', account: '나무(CMA)', amount: 10693877 },
-            { year: '2021년', account: '나무(CMA)', amount: 62980627 },
-            { year: '2022년', account: '나무(CMA)', amount: 9137431 },
-            { year: '2022년', account: '나무(ISA)', amount: 2696592 },
-            { year: '2023년', account: '나무(CMA)', amount: -37294156 },
-            { year: '2023년', account: '나무(ISA)', amount: -1983498 },
-            { year: '2024년', account: '나무(CMA)', amount: 80110998 },
-            { year: '2024년', account: '나무(ISA)', amount: 18434616 },
-            { year: '2025년', account: '나무(CMA)', amount: -16285714 },
-            { year: '2025년', account: '나무(ISA)', amount: -14453041 },
-            { year: '2025년', account: '미래(ISA)', amount: 27915 },
-            { year: '2026년', account: '나무(CMA)', amount: 127127250 },
-            { year: '2026년', account: '나무(ISA)', amount: 6768994 },
-            { year: '2026년', account: '미래(ISA)', amount: -20869767 }
+            { year: '2020년', account: 'NH(CMA)', amount: 10693877 },
+            { year: '2021년', account: 'NH(CMA)', amount: 62980627 },
+            { year: '2022년', account: 'NH(CMA)', amount: 9137431 },
+            { year: '2022년', account: 'NH(ISA)', amount: 2696592 },
+            { year: '2023년', account: 'NH(CMA)', amount: -37294156 },
+            { year: '2023년', account: 'NH(ISA)', amount: -1983498 },
+            { year: '2024년', account: 'NH(CMA)', amount: 80110998 },
+            { year: '2024년', account: 'NH(ISA)', amount: 18434616 },
+            { year: '2025년', account: 'NH(CMA)', amount: -16285714 },
+            { year: '2025년', account: 'NH(ISA)', amount: -14453041 },
+            { year: '2025년', account: 'MR(ISA)', amount: 27915 },
+            { year: '2026년', account: 'NH(CMA)', amount: 127127250 },
+            { year: '2026년', account: 'NH(ISA)', amount: 6768994 },
+            { year: '2026년', account: 'MR(ISA)', amount: -20869767 }
         ];
 
         // 암호화 문자열 생성
@@ -999,15 +999,12 @@
                 isMasked = true;
             }
 
-            const maskBtnText = document.getElementById("maskBtnText");
             const maskIcon = document.getElementById("maskIcon");
 
             if (isMasked) {
-                maskBtnText.innerText = "Show Amounts";
-                maskIcon.setAttribute("data-lucide", "eye");
+                maskIcon.setAttribute("data-lucide", "eye-off");
             } else {
-                maskBtnText.innerText = "Hide Amounts";
-                maskIcon.setAttribute("data-lucide", "lock");
+                maskIcon.setAttribute("data-lucide", "eye");
             }
             renderApp();
         }
@@ -1068,7 +1065,7 @@
         }
 
         function addNewAccountRow() {
-            accountDataList.push({ account: "신규계좌", stock: "신규종목", amount: 0 });
+            accountDataList.push({ account: "NH(CMA)", stock: "신규종목", amount: 0 });
             renderApp();
         }
 
@@ -1131,7 +1128,7 @@
         }
 
         function addPnlRow() {
-            pnlDataList.push({ year: '2026년', account: '나무(CMA)', amount: 0 });
+            pnlDataList.push({ year: '2026년', account: 'NH(CMA)', amount: 0 });
             renderPnlEditTable();
             renderApp();
         }
@@ -1140,7 +1137,7 @@
             const container = document.getElementById("accountRowsContainer");
             container.innerHTML = "";
             
-            const defaultAccounts = ["나무(CMA)", "나무(ISA)", "미래(통합)", "삼성증권"];
+            const defaultAccounts = ["NH(CMA)", "NH(ISA)", "MR(통합)", "SM"];
             defaultAccounts.forEach(acc => addAccountRow(acc));
 
             document.getElementById("inputTrendDate").value = "";
@@ -1519,7 +1516,7 @@
 
                 if (isEditMode) {
                     tr.innerHTML = `
-                        <td class="py-1.5 pr-1 overflow-hidden"><input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 text-xs font-medium" value="${data.account}" onchange="updateAccount(${idx}, 'account', this.value)"></td>
+                        <td class="py-1.5 pr-1 overflow-hidden w-20"><input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 text-xs font-medium" value="${data.account}" onchange="updateAccount(${idx}, 'account', this.value)"></td>
                         <td class="py-1.5 px-1 overflow-hidden"><input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 text-xs font-medium" value="${data.stock}" onchange="updateAccount(${idx}, 'stock', this.value)"></td>
                         <td class="py-1.5 px-1 text-right whitespace-nowrap w-44">
                             <div class="flex items-center justify-end gap-0.5">
@@ -1535,8 +1532,8 @@
                     `;
                 } else {
                     tr.innerHTML = `
-                        <td class="py-2 font-medium truncate" title="${data.account}">${data.account}</td>
-                        <td class="py-2 font-medium truncate" title="${data.stock}">${data.stock}</td>
+                        <td class="py-2 font-medium truncate w-20 pr-1" title="${data.account}">${data.account}</td>
+                        <td class="py-2 font-medium truncate pr-1" title="${data.stock}">${data.stock}</td>
                         <td class="py-2 text-right whitespace-nowrap w-44 font-medium">
                             ${displayVal}원 <span class="font-bold text-gray-700 dark:text-gray-300 ml-0.5">(${isMasked ? '0.0' : weight}%)</span>
                         </td>
@@ -1583,7 +1580,6 @@
             }
         }
 
-        // 입력 중 키보드 내려감 방지용 백그라운드 값 업데이트 함수
         function updateAccountSilent(index, key, value) {
             if (accountDataList[index]) {
                 accountDataList[index][key] = Number(value) || 0;

@@ -88,7 +88,6 @@
 
             <!-- 서식 툴바 (편집 모드 시 노출) -->
             <div id="topMemoToolbar" class="hidden flex flex-wrap items-center gap-1.5 p-2 bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-800 rounded-2xl text-xs">
-                <!-- 글자 크기 선택 -->
                 <select id="memoFontSize" onchange="applyMemoStyle()" class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-1.5 py-1 text-[11px] font-semibold text-gray-700 dark:text-gray-200 focus:outline-none cursor-pointer">
                     <option value="12px">12px</option>
                     <option value="14px" selected>14px</option>
@@ -100,20 +99,17 @@
                     <option value="32px">32px</option>
                 </select>
 
-                <!-- Color Picker -->
                 <div class="flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-1.5 py-0.5">
                     <i data-lucide="palette" class="w-3.5 h-3.5 text-gray-500"></i>
                     <input type="color" id="memoColor" value="#1f2937" onchange="applyMemoStyle()" class="w-5 h-5 bg-transparent border-0 cursor-pointer rounded">
                 </div>
 
-                <!-- 스타일 버튼 그룹 -->
                 <div class="flex items-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-0.5">
                     <button id="btnBold" onclick="toggleStyleState('bold')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 font-black text-xs w-6 h-6 flex items-center justify-center">B</button>
                     <button id="btnItalic" onclick="toggleStyleState('italic')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 italic text-xs w-6 h-6 flex items-center justify-center">I</button>
                     <button id="btnUnderline" onclick="toggleStyleState('underline')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 underline text-xs w-6 h-6 flex items-center justify-center">U</button>
                 </div>
 
-                <!-- 정렬 버튼 그룹 -->
                 <div class="flex items-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-0.5">
                     <button id="btnAlignLeft" onclick="setMemoAlign('left')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 w-6 h-6 flex items-center justify-center"><i data-lucide="align-left" class="w-3.5 h-3.5"></i></button>
                     <button id="btnAlignCenter" onclick="setMemoAlign('center')" class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 w-6 h-6 flex items-center justify-center"><i data-lucide="align-center" class="w-3.5 h-3.5"></i></button>
@@ -121,10 +117,7 @@
                 </div>
             </div>
 
-            <!-- 1. 뷰 모드용 영역 (텍스트만 깔끔하게 노출) -->
             <div id="topMemoView" class="whitespace-pre-line leading-relaxed font-medium min-h-[40px]"></div>
-
-            <!-- 2. 편집 모드용 영역 (Textarea) -->
             <textarea id="topMemoTextarea" placeholder="메모할 내용을 입력하세요..." class="hidden w-full min-h-[90px] p-3 rounded-2xl border border-amber-400/50 bg-amber-50/30 dark:bg-gray-900/80 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-amber-500 resize-y leading-relaxed font-medium transition"></textarea>
         </div>
 
@@ -152,11 +145,9 @@
                     올해 손익
                 </h3>
                 <div class="flex items-center gap-1.5">
-                    <!-- 날짜 선택 네비게이션 -->
                     <div class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-0.5 border border-gray-200 dark:border-gray-700">
                         <button onclick="shiftYtdDate(-1)" class="p-1 text-gray-500 hover:text-gray-900 dark:hover:text-white"><i data-lucide="chevron-left" class="w-3.5 h-3.5"></i></button>
                         <select id="ytdDateSelector" onchange="selectYtdDate(this.value)" class="bg-transparent text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none px-1 cursor-pointer">
-                            <!-- 동적 옵션 생성 -->
                         </select>
                         <button onclick="shiftYtdDate(1)" class="p-1 text-gray-500 hover:text-gray-900 dark:hover:text-white"><i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></button>
                     </div>
@@ -167,7 +158,6 @@
                 </div>
             </div>
 
-            <!-- 총 손익 요약 박스 -->
             <div class="bg-gray-50 dark:bg-gray-900/60 border border-gray-100 dark:border-gray-800 rounded-2xl p-3.5 flex justify-between items-center">
                 <span class="text-xs font-medium text-gray-500 dark:text-gray-400">올해 누적 손익 합계</span>
                 <div class="text-base font-black">
@@ -175,12 +165,8 @@
                 </div>
             </div>
 
-            <!-- 세부 항목 수치 요약 Grid (동적 생성) -->
-            <div id="ytd-items-grid" class="grid grid-cols-2 gap-2 text-xs">
-                <!-- 동적으로 세부 손익 항목 생성됨 -->
-            </div>
+            <div id="ytd-items-grid" class="grid grid-cols-2 gap-2 text-xs"></div>
 
-            <!-- 올해 손익 가로 막대 그래프 영역 (날짜별 누적 합계 표시) -->
             <div class="relative w-full h-[180px] pt-2">
                 <canvas id="ytdBarChart"></canvas>
             </div>
@@ -203,13 +189,10 @@
                             <th class="pb-2 text-right font-medium">매입금액 (비중)</th>
                         </tr>
                     </thead>
-                    <tbody id="stock-summary-body" class="divide-y divide-gray-100 dark:divide-gray-800/60">
-                        <!-- 동적 생성 -->
-                    </tbody>
+                    <tbody id="stock-summary-body" class="divide-y divide-gray-100 dark:divide-gray-800/60"></tbody>
                 </table>
             </div>
 
-            <!-- 파이 차트 영역 -->
             <div class="relative w-full pt-4 border-t border-gray-100 dark:border-gray-800/60 flex justify-center items-center overflow-visible">
                 <div class="w-64 h-64 relative">
                     <canvas id="stockPieChart"></canvas>
@@ -240,13 +223,10 @@
                             <th class="pb-2 text-right cursor-pointer hover:text-blue-500 transition select-none w-[40%] nowrap-amount" onclick="sortTable(2)" id="table-header-amount">매입금액 (비중) ↕</th>
                         </tr>
                     </thead>
-                    <tbody id="account-table-body" class="divide-y divide-gray-100 dark:divide-gray-800/60">
-                        <!-- 동적 생성 -->
-                    </tbody>
+                    <tbody id="account-table-body" class="divide-y divide-gray-100 dark:divide-gray-800/60"></tbody>
                 </table>
             </div>
 
-            <!-- 계좌 내역 신규 추가 버튼 (편집 모드 시 노출) -->
             <div id="accountAddBtnContainer" class="hidden mt-3">
                 <button type="button" onclick="addNewAccountRow()" class="w-full py-2 rounded-xl border border-dashed border-blue-400 dark:border-blue-700 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 text-xs font-semibold flex items-center justify-center gap-1 transition">
                     <i data-lucide="plus" class="w-3.5 h-3.5"></i>
@@ -268,7 +248,6 @@
                 </button>
             </div>
 
-            <!-- 메모 영역 -->
             <div class="mb-3 bg-white dark:bg-brand-cardDark border border-amber-500/30 dark:border-amber-500/20 rounded-2xl p-4 shadow-sm flex flex-col">
                 <div class="flex justify-between items-center mb-1">
                     <h4 class="text-xs font-bold flex items-center gap-1.5 text-gray-900 dark:text-white">
@@ -280,10 +259,9 @@
                     </button>
                 </div>
                 <div id="trendMemoView" class="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed font-medium"></div>
-                <textarea id="trendMemoEdit" onchange="updateTrendMemo(this.value)" class="hidden w-full text-xs p-2.5 mt-1 rounded-xl border border-amber-400 bg-amber-50/50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-amber-500 resize-y" rows="4"></textarea>
+                <textarea id="trendMemoEdit" oninput="updateTrendMemo(this.value)" class="hidden w-full text-xs p-2.5 mt-1 rounded-xl border border-amber-400 bg-amber-50/50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-amber-500 resize-y" rows="4"></textarea>
             </div>
 
-            <!-- 트렌드 자산 상승 요약 카드 -->
             <div class="mb-4 p-3.5 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-blue-500/10 border border-emerald-500/20 dark:border-emerald-500/30 rounded-2xl flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <div class="w-8 h-8 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
@@ -300,7 +278,6 @@
                 </div>
             </div>
 
-            <!-- 가로 누적 막대 그래프 영역 -->
             <div class="relative w-full h-[420px] mt-1">
                 <canvas id="trendBarChart"></canvas>
             </div>
@@ -319,7 +296,6 @@
                 </button>
             </div>
 
-            <!-- 총 금액 합계액 박스 -->
             <div class="bg-gray-50 dark:bg-gray-900/60 border border-gray-100 dark:border-gray-800 rounded-2xl p-3.5 flex justify-between items-center">
                 <span class="text-xs font-medium text-gray-500 dark:text-gray-400">전체 확정 손익 합계</span>
                 <div class="text-base font-black text-gray-900 dark:text-white">
@@ -327,7 +303,6 @@
                 </div>
             </div>
 
-            <!-- 편집 모드용 테이블 -->
             <div id="pnlEditContainer" class="hidden overflow-x-auto space-y-2 pt-2">
                 <table class="w-full text-left text-xs">
                     <thead>
@@ -338,9 +313,7 @@
                             <th class="pb-1 text-center font-medium w-10">삭제</th>
                         </tr>
                     </thead>
-                    <tbody id="pnl-edit-tbody" class="divide-y divide-gray-100 dark:divide-gray-800/60">
-                        <!-- 동적 생성 -->
-                    </tbody>
+                    <tbody id="pnl-edit-tbody" class="divide-y divide-gray-100 dark:divide-gray-800/60"></tbody>
                 </table>
                 <button type="button" onclick="addPnlRow()" class="w-full py-1.5 rounded-xl border border-dashed border-blue-300 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 text-xs font-semibold flex items-center justify-center gap-1 transition">
                     <i data-lucide="plus" class="w-3 h-3"></i>
@@ -348,7 +321,6 @@
                 </button>
             </div>
 
-            <!-- 확정 손익 바 차트 영역 -->
             <div class="relative w-full h-[320px] mt-1">
                 <canvas id="pnlBarChart"></canvas>
             </div>
@@ -356,7 +328,7 @@
 
     </div>
 
-    <!-- 1. 올해 손익 관리 모달 (동적 손익 항목 추가 지원) -->
+    <!-- 모달: 올해 손익 관리 -->
     <div id="ytdModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white dark:bg-brand-cardDark border border-gray-200 dark:border-gray-800 rounded-3xl p-5 w-full max-w-sm shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
             <div class="flex justify-between items-center shrink-0">
@@ -377,10 +349,7 @@
                         <input type="text" id="inputYtdDate" placeholder="26.07.30" class="w-full bg-white dark:bg-gray-800 p-2 text-xs rounded-xl border border-gray-200 dark:border-gray-700 focus:outline-none focus:border-blue-500 font-medium">
                     </div>
 
-                    <!-- 동적 손익 항목 입력 컨테이너 -->
-                    <div id="ytdDynamicFields" class="space-y-2">
-                        <!-- 항목들 동적 생성 -->
-                    </div>
+                    <div id="ytdDynamicFields" class="space-y-2"></div>
 
                     <button type="button" onclick="addYtdDynamicInputRow()" class="w-full py-1.5 mt-2 rounded-xl border border-dashed border-emerald-400 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-xs font-semibold flex items-center justify-center gap-1 transition">
                         <i data-lucide="plus" class="w-3.5 h-3.5"></i>
@@ -394,9 +363,7 @@
 
                 <div class="space-y-1.5 pt-2">
                     <h5 class="text-xs font-bold text-gray-700 dark:text-gray-300">저장된 날짜 목록</h5>
-                    <div id="ytdHistoryList" class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
-                        <!-- 목록 동적 생성 -->
-                    </div>
+                    <div id="ytdHistoryList" class="space-y-1.5 max-h-40 overflow-y-auto pr-1"></div>
                 </div>
             </div>
 
@@ -406,7 +373,7 @@
         </div>
     </div>
 
-    <!-- 트랜드 내역 추가 모달 -->
+    <!-- 모달: 트랜드 내역 추가 -->
     <div id="trendModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white dark:bg-brand-cardDark border border-gray-200 dark:border-gray-800 rounded-3xl p-5 w-full max-w-sm shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
             <div class="flex justify-between items-center shrink-0">
@@ -640,7 +607,7 @@
             selectedYtdDate = '26.07.30';
         }
 
-        /* --- 상단 메모 토글 및 서식 제어 함수 --- */
+        /* --- 상단 메모 토글 및 서식 제어 --- */
         function initTopMemoUI() {
             const viewElem = document.getElementById("topMemoView");
             const textarea = document.getElementById("topMemoTextarea");
@@ -898,9 +865,9 @@
             pnlDataList.forEach((item, index) => {
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
-                    <td class="py-1.5 pr-1"><input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 text-xs font-medium" value="${item.year}" onchange="updatePnlItem(${index}, 'year', this.value)"></td>
-                    <td class="py-1.5 px-1"><input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 text-xs font-medium" value="${item.account}" onchange="updatePnlItem(${index}, 'account', this.value)"></td>
-                    <td class="py-1.5 px-1"><input type="number" class="w-full text-right bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 text-xs font-medium" value="${item.amount}" onchange="updatePnlItem(${index}, 'amount', this.value)"></td>
+                    <td class="py-1.5 pr-1"><input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 text-xs font-medium" value="${item.year}" oninput="updatePnlItem(${index}, 'year', this.value)"></td>
+                    <td class="py-1.5 px-1"><input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 text-xs font-medium" value="${item.account}" oninput="updatePnlItem(${index}, 'account', this.value)"></td>
+                    <td class="py-1.5 px-1"><input type="number" class="w-full text-right bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 text-xs font-medium" value="${item.amount}" oninput="updatePnlItem(${index}, 'amount', this.value)"></td>
                     <td class="py-1.5 pl-1 text-center"><button type="button" onclick="deletePnlItem(${index})" class="text-gray-400 hover:text-red-500 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button></td>
                 `;
                 tbody.appendChild(tr);
@@ -909,13 +876,13 @@
         }
 
         function updatePnlItem(index, key, value) {
+            if (!pnlDataList[index]) return;
             if (key === 'year' || key === 'account') {
-                pnlDataList[index][key] = value.trim();
+                pnlDataList[index][key] = value;
             } else {
                 pnlDataList[index].amount = Number(value) || 0;
             }
             saveAllToLocalStorage();
-            renderApp();
         }
 
         function deletePnlItem(index) {
@@ -965,8 +932,8 @@
                 const div = document.createElement("div");
                 div.className = "flex items-center gap-1.5 bg-white dark:bg-gray-800 p-1.5 rounded-xl border border-gray-200 dark:border-gray-700";
                 div.innerHTML = `
-                    <input type="text" placeholder="항목명" value="${item.name}" onchange="tempYtdItems[${index}].name = this.value" class="w-1/2 bg-transparent text-xs p-1 focus:outline-none font-medium border-b border-transparent focus:border-blue-500">
-                    <input type="number" placeholder="금액" value="${item.amount}" onchange="tempYtdItems[${index}].amount = Number(this.value) || 0" class="w-1/2 bg-transparent text-xs p-1 text-right focus:outline-none font-medium border-b border-transparent focus:border-blue-500">
+                    <input type="text" placeholder="항목명" value="${item.name}" oninput="tempYtdItems[${index}].name = this.value" class="w-1/2 bg-transparent text-xs p-1 focus:outline-none font-medium border-b border-transparent focus:border-blue-500">
+                    <input type="number" placeholder="금액" value="${item.amount}" oninput="tempYtdItems[${index}].amount = Number(this.value) || 0" class="w-1/2 bg-transparent text-xs p-1 text-right focus:outline-none font-medium border-b border-transparent focus:border-blue-500">
                     <button type="button" onclick="removeYtdDynamicInputRow(${index})" class="text-gray-400 hover:text-red-500 p-1 shrink-0" title="삭제">
                         <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                     </button>
@@ -1618,15 +1585,19 @@
                 const tr = document.createElement("tr");
                 tr.className = "hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors h-9";
                 const weight = grandTotal > 0 ? ((data.amount / grandTotal) * 100).toFixed(1) : "0.0";
-                const displayVal = isMasked ? "******" : data.amount.toLocaleString();
+                const displayVal = isMasked ? "******" : data.amount;
 
                 if (isEditMode) {
                     tr.innerHTML = `
-                        <td class="py-1 pr-1"><input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 text-xs font-medium" value="${data.account}" onchange="updateAccount(${idx}, 'account', this.value)"></td>
-                        <td class="py-1 px-1"><input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 text-xs font-medium" value="${data.stock}" onchange="updateAccount(${idx}, 'stock', this.value)"></td>
+                        <td class="py-1 pr-1">
+                            <input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 text-xs font-medium" value="${data.account}" oninput="updateAccountField(${idx}, 'account', this.value)">
+                        </td>
+                        <td class="py-1 px-1">
+                            <input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 text-xs font-medium" value="${data.stock}" oninput="updateAccountField(${idx}, 'stock', this.value)">
+                        </td>
                         <td class="py-1 pl-1 text-right">
                             <div class="flex items-center justify-end gap-1">
-                                <input type="text" class="w-full text-right bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 text-xs font-medium" value="${displayVal}" oninput="updateAmountInput(this, ${idx})">
+                                <input type="number" class="w-full text-right bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 text-xs font-medium" value="${displayVal}" oninput="updateAccountField(${idx}, 'amount', this.value)">
                                 <button type="button" onclick="deleteAccountRow(${idx})" class="text-gray-400 hover:text-red-500 p-0.5 shrink-0" title="삭제">
                                     <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                                 </button>
@@ -1642,7 +1613,7 @@
                             <span class="fade-text" title="${data.stock}">${data.stock}</span>
                         </td>
                         <td class="py-2 text-right align-middle nowrap-amount">
-                            ${displayVal}원 <span class="font-bold text-gray-700 dark:text-gray-300 ml-0.5">(${isMasked ? '0.0' : weight}%)</span>
+                            ${displayVal.toLocaleString()}원 <span class="font-bold text-gray-700 dark:text-gray-300 ml-0.5">(${isMasked ? '0.0' : weight}%)</span>
                         </td>
                     `;
                 }
@@ -1678,21 +1649,15 @@
             lucide.createIcons();
         }
 
-        function updateAccount(index, key, value) {
+        /* 입력 중 포커스 유지를 위해 DOM 재생성(renderApp)을 건너뛰고 값만 갱신하는 핵심 수정 함수 */
+        function updateAccountField(index, key, value) {
             if (accountDataList[index]) {
-                accountDataList[index][key] = value.trim();
+                if (key === 'amount') {
+                    accountDataList[index].amount = Number(value) || 0;
+                } else {
+                    accountDataList[index][key] = value;
+                }
                 saveAllToLocalStorage();
-                renderApp();
-            }
-        }
-
-        function updateAmountInput(input, index) {
-            if (accountDataList[index]) {
-                let cleanVal = input.value.replace(/[^0-9]/g, "");
-                let number = Number(cleanVal) || 0;
-                accountDataList[index].amount = number;
-                saveAllToLocalStorage();
-                renderApp();
             }
         }
 

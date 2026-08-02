@@ -134,7 +134,7 @@
             <div id="mainPinnedMemoContainer" class="pt-1"></div>
         </div>
 
-        <!-- 3. 종목별 통합 보유 현황 카드 -->
+        <!-- 3. 종목별 통합 보유 현황 카드 (계좌별 상세내역 기반 자동 생성) -->
         <div class="bg-white dark:bg-brand-cardDark border border-gray-200 dark:border-gray-800/80 rounded-3xl p-5 shadow-sm dark:shadow-xl flex flex-col">
             <div class="flex justify-between items-center mb-3">
                 <h3 class="text-sm font-bold flex items-center gap-1.5">
@@ -474,13 +474,12 @@
 
         let sortDirections = [true, true, true];
         let isMasked = false; 
-        let secretKey = "0713"; 
         let isEditMode = false;
         let isPnlEditMode = false;
         let isTrendMemoEditMode = false;
-        let isDetailFullView = false; // 계좌별 상세내역 전체보기 모드 state
+        let isDetailFullView = false; 
 
-        let savedScrollPosition = 0; // 메인 화면 스크롤 위치 저장 변수
+        let savedScrollPosition = 0; 
 
         let pieChart = null;
         let trendChart = null;
@@ -488,27 +487,6 @@
 
         let trendMemoText = `3/6 : 1억 추가\n5/31 : 주식보상 30주 추가\n6/25 : 1000만원 추가\n7/12 : 주식보상 22주 추가`;
 
-        // --- 페이지 진입 비밀번호 인증 핸들러 ---
-        function handleInitialAuth(event) {
-            event.preventDefault();
-            const pwInput = document.getElementById("initialAuthPassword").value.trim();
-            const errorMsg = document.getElementById("authErrorMsg");
-
-            if (pwInput === "0713") {
-                document.getElementById("authOverlay").classList.add("hidden");
-                errorMsg.classList.add("hidden");
-                // 인증 성공 시점 데이터 초기화 및 렌더링
-                loadMemosFromStorage();
-                loadDetailFullViewStorage();
-                renderApp();
-            } else {
-                errorMsg.classList.remove("hidden");
-                document.getElementById("initialAuthPassword").value = "";
-                document.getElementById("initialAuthPassword").focus();
-            }
-        }
-
-        // --- 메모 시스템 state & localStorage 연동 ---
         let memoList = [];
         let newMemoStyle = { bold: false, italic: false, underline: false, align: 'left' };
         let editMemoStyle = { bold: false, italic: false, underline: false, align: 'left' };
@@ -557,424 +535,7 @@
             }
         ];
 
-        function loadMemosFromStorage() {
-            try {
-                const stored = localStorage.getItem('myStockMemoList');
-                if (stored) {
-                    memoList = JSON.parse(stored);
-                } else {
-                    memoList = [...defaultInitialMemos];
-                    saveMemosToStorage();
-                }
-            } catch (e) {
-                memoList = [...defaultInitialMemos];
-            }
-        }
-
-        function saveMemosToStorage() {
-            localStorage.setItem('myStockMemoList', JSON.stringify(memoList));
-            renderMainPinnedMemo();
-        }
-
-        // 계좌별 상세내역 보기모드 (축약/전체) localStorage 저장/복원
-        function loadDetailFullViewStorage() {
-            const stored = localStorage.getItem('myStockDetailFullView');
-            isDetailFullView = stored === 'true';
-            updateDetailFullViewBtnUI();
-        }
-
-        function toggleDetailFullView() {
-            isDetailFullView = !isDetailFullView;
-            localStorage.setItem('myStockDetailFullView', isDetailFullView);
-            updateDetailFullViewBtnUI();
-            renderApp();
-        }
-
-        function updateDetailFullViewBtnUI() {
-            const btnText = document.getElementById("detailFullViewBtnText");
-            const icon = document.getElementById("detailFullViewIcon");
-
-            if (isDetailFullView) {
-                btnText.innerText = "축약보기";
-                icon.setAttribute("data-lucide", "minimize-2");
-            } else {
-                btnText.innerText = "전체보기";
-                icon.setAttribute("data-lucide", "maximize-2");
-            }
-            lucide.createIcons();
-        }
-
-        // 만원/억 단위 버림(절사) 축약 포맷터
-        function formatAmountShort(amount) {
-            if (isMasked) return "******";
-            if (amount === 0) return "0원";
-
-            const man = Math.floor(amount / 10000); // 원 단위 절사
-            if (man === 0) return "0원";
-
-            const eok = Math.floor(man / 10000);
-            const remainderMan = man % 10000;
-
-            if (eok > 0) {
-                if (remainderMan > 0) {
-                    return `${eok}억 ${remainderMan.toLocaleString()}만원`;
-                } else {
-                    return `${eok}억원`;
-                }
-            } else {
-                return `${man.toLocaleString()}만원`;
-            }
-        }
-
-        function renderMainPinnedMemo() {
-            const container = document.getElementById('mainPinnedMemoContainer');
-            if (!container) return;
-
-            const pinnedMemo = memoList.find(m => m.isPinned);
-
-            if (!pinnedMemo) {
-                container.innerHTML = `
-                    <div class="py-6 px-4 rounded-2xl bg-amber-50/20 dark:bg-gray-900/40 border border-dashed border-amber-300 dark:border-amber-500/30 text-center flex flex-col items-center justify-center space-y-2">
-                        <p class="text-xs font-bold text-gray-600 dark:text-gray-300">📌 고정된 메모가 없습니다.</p>
-                        <button onclick="openNewMemoEditor()" class="px-3 py-1.5 rounded-xl bg-amber-500 text-white font-bold text-xs hover:bg-amber-600 transition shadow-sm flex items-center gap-1">
-                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                            <span>새 메모 작성</span>
-                        </button>
-                    </div>
-                `;
-            } else {
-                const fontSizes = { xs: '12px', sm: '14px', base: '16px', lg: '18px' };
-                const fontSizeCss = fontSizes[pinnedMemo.fontSize] || '14px';
-                const colorCss = pinnedMemo.color || '#374151';
-                const boldCss = pinnedMemo.bold ? 'font-bold' : 'font-medium';
-                const italicCss = pinnedMemo.italic ? 'italic' : '';
-                const underlineCss = pinnedMemo.underline ? 'underline' : '';
-                const alignCss = pinnedMemo.align || 'left';
-
-                container.innerHTML = `
-                    <div class="p-3.5 rounded-2xl bg-amber-50/30 dark:bg-gray-900/50 border border-amber-200 dark:border-amber-500/20 space-y-1.5">
-                        <div class="flex justify-between items-center text-[11px] text-amber-600 dark:text-amber-400 font-bold">
-                            <span class="flex items-center gap-1">📌 ${pinnedMemo.date} ${pinnedMemo.time}</span>
-                            <button onclick="openMemoDetail(${pinnedMemo.id}); openMemoViewModal();" class="text-[10px] text-gray-400 hover:text-amber-500 flex items-center gap-0.5">상세보기 <i data-lucide="chevron-right" class="w-3 h-3"></i></button>
-                        </div>
-                        <div class="whitespace-pre-line leading-relaxed ${boldCss} ${italicCss} ${underlineCss}" style="font-size: ${fontSizeCss}; color: ${colorCss}; text-align: ${alignCss};">
-                            ${pinnedMemo.text}
-                        </div>
-                    </div>
-                `;
-            }
-            lucide.createIcons();
-        }
-
-        function openNewMemoEditor() {
-            document.getElementById('newMemoText').value = '';
-            document.getElementById('newMemoModal').classList.remove('hidden');
-            applyNewMemoStyle();
-            lucide.createIcons();
-        }
-
-        function closeNewMemoEditor() {
-            document.getElementById('newMemoModal').classList.add('hidden');
-        }
-
-        function toggleNewOption(type) {
-            newMemoStyle[type] = !newMemoStyle[type];
-            const btnMap = { bold: 'btnNewBold', italic: 'btnNewItalic', underline: 'btnNewUnderline' };
-            const elem = document.getElementById(btnMap[type]);
-            if (newMemoStyle[type]) {
-                elem.classList.add('bg-amber-200', 'dark:bg-amber-800', 'text-amber-800', 'dark:text-amber-200');
-            } else {
-                elem.classList.remove('bg-amber-200', 'dark:bg-amber-800', 'text-amber-800', 'dark:text-amber-200');
-            }
-            applyNewMemoStyle();
-        }
-
-        function setNewAlign(align) {
-            newMemoStyle.align = align;
-            applyNewMemoStyle();
-        }
-
-        function applyNewMemoStyle() {
-            const textarea = document.getElementById('newMemoText');
-            textarea.style.fontWeight = newMemoStyle.bold ? 'bold' : 'normal';
-            textarea.style.fontStyle = newMemoStyle.italic ? 'italic' : 'normal';
-            textarea.style.textDecoration = newMemoStyle.underline ? 'underline' : 'none';
-            textarea.style.textAlign = newMemoStyle.align;
-            textarea.style.color = document.getElementById('newMemoColor').value;
-
-            const fontSizes = { xs: '12px', sm: '14px', base: '16px', lg: '18px' };
-            textarea.style.fontSize = fontSizes[document.getElementById('newMemoFontSize').value] || '14px';
-        }
-
-        function saveNewMemo() {
-            const text = document.getElementById('newMemoText').value.trim();
-            if (!text) {
-                alert('메모 내용을 입력해주세요.');
-                return;
-            }
-
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const date = String(now.getDate()).padStart(2, '0');
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-
-            const hasPinned = memoList.some(m => m.isPinned);
-
-            const newMemo = {
-                id: Date.now(),
-                date: `${year}.${month}.${date}`,
-                time: `${hours}:${minutes}`,
-                text: text,
-                fontSize: document.getElementById('newMemoFontSize').value,
-                color: document.getElementById('newMemoColor').value,
-                bold: newMemoStyle.bold,
-                italic: newMemoStyle.italic,
-                underline: newMemoStyle.underline,
-                align: newMemoStyle.align,
-                isPinned: !hasPinned
-            };
-
-            memoList.unshift(newMemo);
-            saveMemosToStorage();
-
-            closeNewMemoEditor();
-            alert('새 메모가 저장되었습니다.');
-        }
-
-        /* --- 메모 View 모달 오픈/클로즈 스크롤 방지 로직 --- */
-        function openMemoViewModal() {
-            // 메인 페이지 스크롤 위치 보존
-            savedScrollPosition = window.scrollY || window.pageYOffset;
-
-            // 바디 고정 (iOS Safari & Android 호환)
-            document.body.classList.add('scroll-locked');
-            document.body.style.top = `-${savedScrollPosition}px`;
-
-            document.getElementById('memoViewModal').classList.remove('hidden');
-            backToMemoList();
-            renderMemoList();
-            lucide.createIcons();
-        }
-
-        function closeMemoViewModal() {
-            document.getElementById('memoViewModal').classList.add('hidden');
-
-            // 바디 고정 해제
-            document.body.classList.remove('scroll-locked');
-            document.body.style.top = '';
-
-            // 이전 스크롤 위치로 복원
-            window.scrollTo(0, savedScrollPosition);
-        }
-
-        function renderMemoList() {
-            const listContainer = document.getElementById('memoListView');
-            const keyword = document.getElementById('memoSearchInput').value.trim().toLowerCase();
-
-            let filtered = memoList.filter(m => 
-                m.date.toLowerCase().includes(keyword) || 
-                m.text.toLowerCase().includes(keyword)
-            );
-
-            filtered.sort((a, b) => {
-                if (a.isPinned && !b.isPinned) return -1;
-                if (!a.isPinned && b.isPinned) return 1;
-                return b.id - a.id;
-            });
-
-            listContainer.innerHTML = '';
-
-            if (filtered.length === 0) {
-                listContainer.innerHTML = `
-                    <div class="text-center py-12 text-xs text-gray-400 font-medium">
-                        저장된 메모가 없습니다.
-                    </div>
-                `;
-                return;
-            }
-
-            filtered.forEach(memo => {
-                const lines = memo.text.split('\n').slice(0, 3).join('\n');
-                const card = document.createElement('div');
-                card.className = `p-4 rounded-2xl bg-white dark:bg-brand-cardDark border ${memo.isPinned ? 'border-amber-400 dark:border-amber-500/50 shadow-md' : 'border-gray-200 dark:border-gray-800/80 shadow-sm'} hover:border-amber-400 transition cursor-pointer space-y-1.5`;
-                card.onclick = () => openMemoDetail(memo.id);
-
-                card.innerHTML = `
-                    <div class="flex justify-between items-center text-[11px] font-bold text-amber-600 dark:text-amber-400">
-                        <span class="flex items-center gap-1">${memo.isPinned ? '📌 ' : ''}${memo.date} ${memo.time}</span>
-                        <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-gray-400"></i>
-                    </div>
-                    <div class="text-xs text-gray-700 dark:text-gray-300 font-medium whitespace-pre-line line-clamp-3 leading-relaxed">
-                        ${lines}
-                    </div>
-                `;
-                listContainer.appendChild(card);
-            });
-            lucide.createIcons();
-        }
-
-        function openMemoDetail(id) {
-            currentDetailMemoId = id;
-            const memo = memoList.find(m => m.id === id);
-            if (!memo) return;
-
-            document.getElementById('memoListView').classList.add('hidden');
-            document.getElementById('memoSearchContainer').classList.add('hidden');
-            document.getElementById('memoDetailView').classList.remove('hidden');
-            document.getElementById('modalHeaderTitle').innerText = '메모 상세보기';
-
-            document.getElementById('detailMemoDateTime').innerText = `작성일시: ${memo.date} ${memo.time}`;
-
-            const badge = document.getElementById('detailMemoPinnedBadge');
-            if (memo.isPinned) {
-                badge.classList.remove('hidden');
-                document.getElementById('btnMemoPinToggleText').innerText = 'Pin 해제';
-            } else {
-                badge.classList.add('hidden');
-                document.getElementById('btnMemoPinToggleText').innerText = 'Pin 고정';
-            }
-
-            const readBox = document.getElementById('detailMemoReadBox');
-            readBox.innerText = memo.text;
-
-            const fontSizes = { xs: '12px', sm: '14px', base: '16px', lg: '18px' };
-            readBox.style.fontSize = fontSizes[memo.fontSize] || '14px';
-            readBox.style.color = memo.color || '#374151';
-            readBox.style.fontWeight = memo.bold ? 'bold' : 'normal';
-            readBox.style.fontStyle = memo.italic ? 'italic' : 'normal';
-            readBox.style.textDecoration = memo.underline ? 'underline' : 'none';
-            readBox.style.textAlign = memo.align || 'left';
-
-            isDetailEditing = false;
-            document.getElementById('detailMemoReadBox').classList.remove('hidden');
-            document.getElementById('detailMemoEditBox').classList.add('hidden');
-            document.getElementById('btnMemoEditToggleText').innerText = '수정';
-        }
-
-        function togglePinCurrentMemo() {
-            const memo = memoList.find(m => m.id === currentDetailMemoId);
-            if (!memo) return;
-
-            if (memo.isPinned) {
-                memo.isPinned = false;
-            } else {
-                memoList.forEach(m => m.isPinned = false);
-                memo.isPinned = true;
-            }
-
-            saveMemosToStorage();
-            openMemoDetail(currentDetailMemoId);
-        }
-
-        function backToMemoList() {
-            document.getElementById('memoListView').classList.remove('hidden');
-            document.getElementById('memoSearchContainer').classList.remove('hidden');
-            document.getElementById('memoDetailView').classList.add('hidden');
-            document.getElementById('modalHeaderTitle').innerText = '메모장 히스토리';
-            renderMemoList();
-        }
-
-        function toggleEditDetailMemo() {
-            isDetailEditing = !isDetailEditing;
-            const memo = memoList.find(m => m.id === currentDetailMemoId);
-            if (!memo) return;
-
-            if (isDetailEditing) {
-                document.getElementById('detailMemoReadBox').classList.add('hidden');
-                document.getElementById('detailMemoEditBox').classList.remove('hidden');
-                document.getElementById('btnMemoEditToggleText').innerText = '취소';
-
-                document.getElementById('editMemoText').value = memo.text;
-                document.getElementById('editMemoFontSize').value = memo.fontSize || 'sm';
-                document.getElementById('editMemoColor').value = memo.color || '#374151';
-
-                editMemoStyle = {
-                    bold: !!memo.bold,
-                    italic: !!memo.italic,
-                    underline: !!memo.underline,
-                    align: memo.align || 'left'
-                };
-
-                updateEditToolbarUI();
-                applyEditMemoStyle();
-            } else {
-                document.getElementById('detailMemoReadBox').classList.remove('hidden');
-                document.getElementById('detailMemoEditBox').classList.add('hidden');
-                document.getElementById('btnMemoEditToggleText').innerText = '수정';
-            }
-        }
-
-        function toggleEditOption(type) {
-            editMemoStyle[type] = !editMemoStyle[type];
-            updateEditToolbarUI();
-            applyEditMemoStyle();
-        }
-
-        function setEditAlign(align) {
-            editMemoStyle.align = align;
-            applyEditMemoStyle();
-        }
-
-        function updateEditToolbarUI() {
-            const btnMap = { bold: 'btnEditBold', italic: 'btnEditItalic', underline: 'btnEditUnderline' };
-            ['bold', 'italic', 'underline'].forEach(type => {
-                const elem = document.getElementById(btnMap[type]);
-                if (editMemoStyle[type]) {
-                    elem.classList.add('bg-amber-200', 'dark:bg-amber-800', 'text-amber-800', 'dark:text-amber-200');
-                } else {
-                    elem.classList.remove('bg-amber-200', 'dark:bg-amber-800', 'text-amber-800', 'dark:text-amber-200');
-                }
-            });
-        }
-
-        function applyEditMemoStyle() {
-            const textarea = document.getElementById('editMemoText');
-            textarea.style.fontWeight = editMemoStyle.bold ? 'bold' : 'normal';
-            textarea.style.fontStyle = editMemoStyle.italic ? 'italic' : 'normal';
-            textarea.style.textDecoration = editMemoStyle.underline ? 'underline' : 'none';
-            textarea.style.textAlign = editMemoStyle.align;
-            textarea.style.color = document.getElementById('editMemoColor').value;
-
-            const fontSizes = { xs: '12px', sm: '14px', base: '16px', lg: '18px' };
-            textarea.style.fontSize = fontSizes[document.getElementById('editMemoFontSize').value] || '14px';
-        }
-
-        function saveUpdatedMemo() {
-            const index = memoList.findIndex(m => m.id === currentDetailMemoId);
-            if (index === -1) return;
-
-            const text = document.getElementById('editMemoText').value.trim();
-            if (!text) {
-                alert('메모 내용을 입력해주세요.');
-                return;
-            }
-
-            memoList[index].text = text;
-            memoList[index].fontSize = document.getElementById('editMemoFontSize').value;
-            memoList[index].color = document.getElementById('editMemoColor').value;
-            memoList[index].bold = editMemoStyle.bold;
-            memoList[index].italic = editMemoStyle.italic;
-            memoList[index].underline = editMemoStyle.underline;
-            memoList[index].align = editMemoStyle.align;
-
-            saveMemosToStorage();
-            alert('메모가 수정되었습니다.');
-            openMemoDetail(currentDetailMemoId);
-        }
-
-        function deleteCurrentDetailMemo() {
-            if (confirm("이 메모를 삭제하시겠습니까?")) {
-                memoList = memoList.filter(m => m.id !== currentDetailMemoId);
-                saveMemosToStorage();
-                alert('메모가 삭제되었습니다.');
-                backToMemoList();
-            }
-        }
-
-        // --- 계좌 & 차트 데이터 ---
-        let accountDataListRaw = [
+        let accountDataList = [
             { account: "NH(CMA)", stock: "하이닉스 밸류체인 ETF", amount: 74944150 },
             { account: "NH(ISA)", stock: "하이닉스 밸류체인 ETF", amount: 25743575 },
             { account: "MR(CMA)", stock: "하이닉스 밸류체인 ETF", amount: 13245190 },
@@ -999,7 +560,7 @@
             { account: "MR(CMA)", stock: "현금", amount: 0 }
         ];
 
-        let trendRawDataListRaw = [
+        let trendRawData = [
             { date: '26.02.08', account: 'NH(CMA)', amount: 388326139 },
             { date: '26.02.08', account: 'NH(ISA)', amount: 108938392 },
             { date: '26.02.08', account: 'MR(통합)', amount: 197217402 },
@@ -1042,7 +603,7 @@
             { date: '26.07.25', account: 'SM', amount: 13043455 }
         ];
 
-        let pnlDataListRaw = [
+        let pnlDataList = [
             { year: '2020년', account: 'NH(CMA)', amount: 10693877 },
             { year: '2021년', account: 'NH(CMA)', amount: 62980627 },
             { year: '2022년', account: 'NH(CMA)', amount: 9137431 },
@@ -1059,74 +620,84 @@
             { year: '2026년', account: 'MR(ISA)', amount: -20869767 }
         ];
 
-        // 암호화 문자열 생성
-        const encryptedAccountStr = CryptoJS.AES.encrypt(JSON.stringify(accountDataListRaw), "0713").toString();
-        const encryptedTrendStr = CryptoJS.AES.encrypt(JSON.stringify(trendRawDataListRaw), "0713").toString();
-        const encryptedPnlStr = CryptoJS.AES.encrypt(JSON.stringify(pnlDataListRaw), "0713").toString();
+        // --- 로컬 스토리지 통합 저장 및 불러오기 관리 ---
+        function saveAllDataToStorage() {
+            localStorage.setItem('myStockAccountData', JSON.stringify(accountDataList));
+            localStorage.setItem('myStockTrendData', JSON.stringify(trendRawData));
+            localStorage.setItem('myStockPnlData', JSON.stringify(pnlDataList));
+            localStorage.setItem('myStockMemoList', JSON.stringify(memoList));
+            localStorage.setItem('myStockTrendMemo', trendMemoText);
+            localStorage.setItem('myStockDetailFullView', isDetailFullView);
+            localStorage.setItem('myStockDarkMode', document.documentElement.classList.contains('dark'));
+        }
 
-        let accountDataList = JSON.parse(JSON.stringify(accountDataListRaw));
-        let trendRawData = JSON.parse(JSON.stringify(trendRawDataListRaw));
-        let pnlDataList = JSON.parse(JSON.stringify(pnlDataListRaw));
-
-        function decryptData(pw) {
+        function loadAllDataFromStorage() {
             try {
-                let decAccount = CryptoJS.AES.decrypt(encryptedAccountStr, pw).toString(CryptoJS.enc.Utf8);
-                let decTrend = CryptoJS.AES.decrypt(encryptedTrendStr, pw).toString(CryptoJS.enc.Utf8);
-                let decPnl = CryptoJS.AES.decrypt(encryptedPnlStr, pw).toString(CryptoJS.enc.Utf8);
+                const acc = localStorage.getItem('myStockAccountData');
+                if (acc) accountDataList = JSON.parse(acc);
 
-                if (!decAccount || !decTrend || !decPnl) return false;
+                const trend = localStorage.getItem('myStockTrendData');
+                if (trend) trendRawData = JSON.parse(trend);
 
-                accountDataList = JSON.parse(decAccount);
-                trendRawData = JSON.parse(decTrend);
-                pnlDataList = JSON.parse(decPnl);
-                return true;
+                const pnl = localStorage.getItem('myStockPnlData');
+                if (pnl) pnlDataList = JSON.parse(pnl);
+
+                const memo = localStorage.getItem('myStockMemoList');
+                if (memo) {
+                    memoList = JSON.parse(memo);
+                } else {
+                    memoList = [...defaultInitialMemos];
+                }
+
+                const tMemo = localStorage.getItem('myStockTrendMemo');
+                if (tMemo !== null) {
+                    trendMemoText = tMemo;
+                    const vElem = document.getElementById("trendMemoView");
+                    if (vElem) vElem.innerText = tMemo;
+                }
+
+                const dfView = localStorage.getItem('myStockDetailFullView');
+                if (dfView !== null) {
+                    isDetailFullView = dfView === 'true';
+                    updateDetailFullViewBtnUI();
+                }
+
+                const isDark = localStorage.getItem('myStockDarkMode');
+                if (isDark === 'true') {
+                    document.documentElement.classList.add('dark');
+                }
             } catch (e) {
-                return false;
+                console.error("Storage load error", e);
             }
         }
 
-        const stockColorMap = {
-            'TIGER200IT레버리지': '#007aff',
-            '테크윙': '#374151'
-        };
+        // --- 페이지 진입 비밀번호 인증 핸들러 ---
+        function handleInitialAuth(event) {
+            event.preventDefault();
+            const pwInput = document.getElementById("initialAuthPassword").value.trim();
+            const errorMsg = document.getElementById("authErrorMsg");
 
-        const accountColorPalette = [
-            '#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#14b8a6'
-        ];
-
-        const defaultChartColors = [
-            '#34c759', '#af52de', '#ff9500', '#ff3b30', '#5856d6', '#5ac8fa', '#059669', '#d946ef'
-        ];
-
-        function getStockColor(stockName, index) {
-            const cleanName = stockName.replace(/^\d+\.\s*/, '').trim();
-            if (stockColorMap[cleanName]) return stockColorMap[cleanName];
-            if (stockColorMap[stockName]) return stockColorMap[stockName];
-            return defaultChartColors[index % defaultChartColors.length];
+            if (pwInput === "0713") {
+                document.getElementById("authOverlay").classList.add("hidden");
+                errorMsg.classList.add("hidden");
+                loadAllDataFromStorage();
+                renderApp();
+            } else {
+                errorMsg.classList.remove("hidden");
+                document.getElementById("initialAuthPassword").value = "";
+                document.getElementById("initialAuthPassword").focus();
+            }
         }
 
         function toggleDarkMode() {
             document.documentElement.classList.toggle('dark');
+            saveAllDataToStorage();
             renderApp();
         }
 
         function toggleMask() {
-            if (isMasked) {
-                const inputPassword = prompt("비밀번호를 입력하세요:");
-                if (!inputPassword) return;
-
-                if (decryptData(inputPassword)) {
-                    isMasked = false;
-                } else {
-                    alert("비밀번호가 올바르지 않습니다.");
-                    return;
-                }
-            } else {
-                isMasked = true;
-            }
-
+            isMasked = !isMasked;
             const maskIcon = document.getElementById("maskIcon");
-
             if (isMasked) {
                 maskIcon.setAttribute("data-lucide", "eye-off");
             } else {
@@ -1137,7 +708,9 @@
 
         function updateTrendMemo(val) {
             trendMemoText = val;
-            document.getElementById("trendMemoView").innerText = val;
+            const vElem = document.getElementById("trendMemoView");
+            if (vElem) vElem.innerText = val;
+            saveAllDataToStorage();
         }
 
         function toggleTrendMemoEdit() {
@@ -1159,6 +732,7 @@
                 view.classList.remove("hidden");
                 edit.classList.add("hidden");
                 view.innerText = trendMemoText;
+                saveAllDataToStorage();
             }
             lucide.createIcons();
         }
@@ -1176,24 +750,27 @@
                 editIcon.setAttribute("data-lucide", "check");
                 btn.className = "px-3 py-1 rounded-xl bg-emerald-600 text-white font-semibold text-xs hover:bg-emerald-700 transition flex items-center gap-1";
                 addBtn.classList.remove("hidden");
-                fullViewBtn.classList.add("hidden"); // Edit 모드에서는 전체보기 토글 숨김
+                fullViewBtn.classList.add("hidden");
             } else {
                 editBtnText.innerText = "Edit";
                 editIcon.setAttribute("data-lucide", "pencil");
                 btn.className = "px-3 py-1 rounded-xl bg-blue-600 text-white font-semibold text-xs hover:bg-blue-700 transition flex items-center gap-1";
                 addBtn.classList.add("hidden");
                 fullViewBtn.classList.remove("hidden");
+                saveAllDataToStorage();
             }
             renderApp();
         }
 
         function addNewAccountRow() {
             accountDataList.push({ account: "NH(CMA)", stock: "신규종목", amount: 0 });
+            saveAllDataToStorage();
             renderApp();
         }
 
         function deleteAccountRow(index) {
             accountDataList.splice(index, 1);
+            saveAllDataToStorage();
             renderApp();
         }
 
@@ -1215,6 +792,7 @@
                 editIcon.setAttribute("data-lucide", "pencil");
                 btn.className = "px-3 py-1 rounded-xl bg-blue-600 text-white font-semibold text-xs hover:bg-blue-700 transition flex items-center gap-1";
                 container.classList.add("hidden");
+                saveAllDataToStorage();
             }
             renderApp();
         }
@@ -1241,17 +819,20 @@
             } else {
                 pnlDataList[index].amount = Number(value) || 0;
             }
+            saveAllDataToStorage();
             renderApp();
         }
 
         function deletePnlItem(index) {
             pnlDataList.splice(index, 1);
+            saveAllDataToStorage();
             renderPnlEditTable();
             renderApp();
         }
 
         function addPnlRow() {
             pnlDataList.push({ year: '2026년', account: 'NH(CMA)', amount: 0 });
+            saveAllDataToStorage();
             renderPnlEditTable();
             renderApp();
         }
@@ -1318,6 +899,7 @@
             }
 
             closeTrendModal();
+            saveAllDataToStorage();
             renderApp();
         }
 
@@ -1630,12 +1212,16 @@
             let currentAccountData = accountDataList;
             let currentTrendData = trendRawData;
 
+            // --- 1. 종목별 통합 현황 자동 그룹핑 (계좌별 상세내역 기반) ---
             let stockMap = {};
             let grandTotal = 0;
 
             currentAccountData.forEach(data => {
                 grandTotal += data.amount;
-                stockMap[data.stock] = (stockMap[data.stock] || 0) + data.amount;
+                let cleanStock = data.stock.trim();
+                if (cleanStock) {
+                    stockMap[cleanStock] = (stockMap[cleanStock] || 0) + data.amount;
+                }
             });
 
             document.getElementById("grand-total").innerText = isMasked ? "******" : grandTotal.toLocaleString();
@@ -1708,7 +1294,8 @@
             const summaryBody = document.getElementById("stock-summary-body");
             summaryBody.innerHTML = "";
 
-            const sortedStocks = Object.entries(stockMap).sort((a, b) => b[1] - a[1]);
+            // 종목명 가나다순 기본 정렬 적용
+            const sortedStocks = Object.entries(stockMap).sort((a, b) => a[0].localeCompare(b[0]));
 
             sortedStocks.forEach(([stock, amount], index) => {
                 const weight = grandTotal > 0 ? ((amount / grandTotal) * 100).toFixed(1) : "0.0";
@@ -1739,6 +1326,7 @@
         function updateAccount(index, key, value) {
             if (accountDataList[index]) {
                 accountDataList[index][key] = key === 'amount' ? Number(value) || 0 : value.trim();
+                saveAllDataToStorage();
                 renderApp();
             }
         }
@@ -1746,6 +1334,7 @@
         function updateAccountSilent(index, key, value) {
             if (accountDataList[index]) {
                 accountDataList[index][key] = Number(value) || 0;
+                saveAllDataToStorage();
             }
         }
 
@@ -1767,8 +1356,412 @@
             renderApp();
         }
 
+        const stockColorMap = {
+            'TIGER200IT레버리지': '#007aff',
+            '테크윙': '#374151'
+        };
+
+        const accountColorPalette = [
+            '#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#14b8a6'
+        ];
+
+        const defaultChartColors = [
+            '#34c759', '#af52de', '#ff9500', '#ff3b30', '#5856d6', '#5ac8fa', '#059669', '#d946ef'
+        ];
+
+        function getStockColor(stockName, index) {
+            const cleanName = stockName.replace(/^\d+\.\s*/, '').trim();
+            if (stockColorMap[cleanName]) return stockColorMap[cleanName];
+            if (stockColorMap[stockName]) return stockColorMap[stockName];
+            return defaultChartColors[index % defaultChartColors.length];
+        }
+
+        function formatAmountShort(amount) {
+            if (isMasked) return "******";
+            if (amount === 0) return "0원";
+
+            const man = Math.floor(amount / 10000);
+            if (man === 0) return "0원";
+
+            const eok = Math.floor(man / 10000);
+            const remainderMan = man % 10000;
+
+            if (eok > 0) {
+                if (remainderMan > 0) {
+                    return `${eok}억 ${remainderMan.toLocaleString()}만원`;
+                } else {
+                    return `${eok}억원`;
+                }
+            } else {
+                return `${man.toLocaleString()}만원`;
+            }
+        }
+
+        function loadDetailFullViewStorage() {
+            updateDetailFullViewBtnUI();
+        }
+
+        function toggleDetailFullView() {
+            isDetailFullView = !isDetailFullView;
+            saveAllDataToStorage();
+            updateDetailFullViewBtnUI();
+            renderApp();
+        }
+
+        function updateDetailFullViewBtnUI() {
+            const btnText = document.getElementById("detailFullViewBtnText");
+            const icon = document.getElementById("detailFullViewIcon");
+
+            if (isDetailFullView) {
+                btnText.innerText = "축약보기";
+                icon.setAttribute("data-lucide", "minimize-2");
+            } else {
+                btnText.innerText = "전체보기";
+                icon.setAttribute("data-lucide", "maximize-2");
+            }
+            lucide.createIcons();
+        }
+
+        function renderMainPinnedMemo() {
+            const container = document.getElementById('mainPinnedMemoContainer');
+            if (!container) return;
+
+            const pinnedMemo = memoList.find(m => m.isPinned);
+
+            if (!pinnedMemo) {
+                container.innerHTML = `
+                    <div class="py-6 px-4 rounded-2xl bg-amber-50/20 dark:bg-gray-900/40 border border-dashed border-amber-300 dark:border-amber-500/30 text-center flex flex-col items-center justify-center space-y-2">
+                        <p class="text-xs font-bold text-gray-600 dark:text-gray-300">📌 고정된 메모가 없습니다.</p>
+                        <button onclick="openNewMemoEditor()" class="px-3 py-1.5 rounded-xl bg-amber-500 text-white font-bold text-xs hover:bg-amber-600 transition shadow-sm flex items-center gap-1">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                            <span>새 메모 작성</span>
+                        </button>
+                    </div>
+                `;
+            } else {
+                const fontSizes = { xs: '12px', sm: '14px', base: '16px', lg: '18px' };
+                const fontSizeCss = fontSizes[pinnedMemo.fontSize] || '14px';
+                const colorCss = pinnedMemo.color || '#374151';
+                const boldCss = pinnedMemo.bold ? 'font-bold' : 'font-medium';
+                const italicCss = pinnedMemo.italic ? 'italic' : '';
+                const underlineCss = pinnedMemo.underline ? 'underline' : '';
+                const alignCss = pinnedMemo.align || 'left';
+
+                container.innerHTML = `
+                    <div class="p-3.5 rounded-2xl bg-amber-50/30 dark:bg-gray-900/50 border border-amber-200 dark:border-amber-500/20 space-y-1.5">
+                        <div class="flex justify-between items-center text-[11px] text-amber-600 dark:text-amber-400 font-bold">
+                            <span class="flex items-center gap-1">📌 ${pinnedMemo.date} ${pinnedMemo.time}</span>
+                            <button onclick="openMemoDetail(${pinnedMemo.id}); openMemoViewModal();" class="text-[10px] text-gray-400 hover:text-amber-500 flex items-center gap-0.5">상세보기 <i data-lucide="chevron-right" class="w-3 h-3"></i></button>
+                        </div>
+                        <div class="whitespace-pre-line leading-relaxed ${boldCss} ${italicCss} ${underlineCss}" style="font-size: ${fontSizeCss}; color: ${colorCss}; text-align: ${alignCss};">
+                            ${pinnedMemo.text}
+                        </div>
+                    </div>
+                `;
+            }
+            lucide.createIcons();
+        }
+
+        function openNewMemoEditor() {
+            document.getElementById('newMemoText').value = '';
+            document.getElementById('newMemoModal').classList.remove('hidden');
+            applyNewMemoStyle();
+            lucide.createIcons();
+        }
+
+        function closeNewMemoEditor() {
+            document.getElementById('newMemoModal').classList.add('hidden');
+        }
+
+        function toggleNewOption(type) {
+            newMemoStyle[type] = !newMemoStyle[type];
+            const btnMap = { bold: 'btnNewBold', italic: 'btnNewItalic', underline: 'btnNewUnderline' };
+            const elem = document.getElementById(btnMap[type]);
+            if (newMemoStyle[type]) {
+                elem.classList.add('bg-amber-200', 'dark:bg-amber-800', 'text-amber-800', 'dark:text-amber-200');
+            } else {
+                elem.classList.remove('bg-amber-200', 'dark:bg-amber-800', 'text-amber-800', 'dark:text-amber-200');
+            }
+            applyNewMemoStyle();
+        }
+
+        function setNewAlign(align) {
+            newMemoStyle.align = align;
+            applyNewMemoStyle();
+        }
+
+        function applyNewMemoStyle() {
+            const textarea = document.getElementById('newMemoText');
+            textarea.style.fontWeight = newMemoStyle.bold ? 'bold' : 'normal';
+            textarea.style.fontStyle = newMemoStyle.italic ? 'italic' : 'normal';
+            textarea.style.textDecoration = newMemoStyle.underline ? 'underline' : 'none';
+            textarea.style.textAlign = newMemoStyle.align;
+            textarea.style.color = document.getElementById('newMemoColor').value;
+
+            const fontSizes = { xs: '12px', sm: '14px', base: '16px', lg: '18px' };
+            textarea.style.fontSize = fontSizes[document.getElementById('newMemoFontSize').value] || '14px';
+        }
+
+        function saveNewMemo() {
+            const text = document.getElementById('newMemoText').value.trim();
+            if (!text) {
+                alert('메모 내용을 입력해주세요.');
+                return;
+            }
+
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const date = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+
+            const hasPinned = memoList.some(m => m.isPinned);
+
+            const newMemo = {
+                id: Date.now(),
+                date: `${year}.${month}.${date}`,
+                time: `${hours}:${minutes}`,
+                text: text,
+                fontSize: document.getElementById('newMemoFontSize').value,
+                color: document.getElementById('newMemoColor').value,
+                bold: newMemoStyle.bold,
+                italic: newMemoStyle.italic,
+                underline: newMemoStyle.underline,
+                align: newMemoStyle.align,
+                isPinned: !hasPinned
+            };
+
+            memoList.unshift(newMemo);
+            saveAllDataToStorage();
+
+            closeNewMemoEditor();
+            alert('새 메모가 저장되었습니다.');
+        }
+
+        function openMemoViewModal() {
+            savedScrollPosition = window.scrollY || window.pageYOffset;
+            document.body.classList.add('scroll-locked');
+            document.body.style.top = `-${savedScrollPosition}px`;
+
+            document.getElementById('memoViewModal').classList.remove('hidden');
+            backToMemoList();
+            renderMemoList();
+            lucide.createIcons();
+        }
+
+        function closeMemoViewModal() {
+            document.getElementById('memoViewModal').classList.add('hidden');
+            document.body.classList.remove('scroll-locked');
+            document.body.style.top = '';
+            window.scrollTo(0, savedScrollPosition);
+        }
+
+        function renderMemoList() {
+            const listContainer = document.getElementById('memoListView');
+            const keyword = document.getElementById('memoSearchInput').value.trim().toLowerCase();
+
+            let filtered = memoList.filter(m => 
+                m.date.toLowerCase().includes(keyword) || 
+                m.text.toLowerCase().includes(keyword)
+            );
+
+            filtered.sort((a, b) => {
+                if (a.isPinned && !b.isPinned) return -1;
+                if (!a.isPinned && b.isPinned) return 1;
+                return b.id - a.id;
+            });
+
+            listContainer.innerHTML = '';
+
+            if (filtered.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="text-center py-12 text-xs text-gray-400 font-medium">
+                        저장된 메모가 없습니다.
+                    </div>
+                `;
+                return;
+            }
+
+            filtered.forEach(memo => {
+                const lines = memo.text.split('\n').slice(0, 3).join('\n');
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-2xl bg-white dark:bg-brand-cardDark border ${memo.isPinned ? 'border-amber-400 dark:border-amber-500/50 shadow-md' : 'border-gray-200 dark:border-gray-800/80 shadow-sm'} hover:border-amber-400 transition cursor-pointer space-y-1.5`;
+                card.onclick = () => openMemoDetail(memo.id);
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-center text-[11px] font-bold text-amber-600 dark:text-amber-400">
+                        <span class="flex items-center gap-1">${memo.isPinned ? '📌 ' : ''}${memo.date} ${memo.time}</span>
+                        <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-gray-400"></i>
+                    </div>
+                    <div class="text-xs text-gray-700 dark:text-gray-300 font-medium whitespace-pre-line line-clamp-3 leading-relaxed">
+                        ${lines}
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function openMemoDetail(id) {
+            currentDetailMemoId = id;
+            const memo = memoList.find(m => m.id === id);
+            if (!memo) return;
+
+            document.getElementById('memoListView').classList.add('hidden');
+            document.getElementById('memoSearchContainer').classList.add('hidden');
+            document.getElementById('memoDetailView').classList.remove('hidden');
+            document.getElementById('modalHeaderTitle').innerText = '메모 상세보기';
+
+            document.getElementById('detailMemoDateTime').innerText = `작성일시: ${memo.date} ${memo.time}`;
+
+            const badge = document.getElementById('detailMemoPinnedBadge');
+            if (memo.isPinned) {
+                badge.classList.remove('hidden');
+                document.getElementById('btnMemoPinToggleText').innerText = 'Pin 해제';
+            } else {
+                badge.classList.add('hidden');
+                document.getElementById('btnMemoPinToggleText').innerText = 'Pin 고정';
+            }
+
+            const readBox = document.getElementById('detailMemoReadBox');
+            readBox.innerText = memo.text;
+
+            const fontSizes = { xs: '12px', sm: '14px', base: '16px', lg: '18px' };
+            readBox.style.fontSize = fontSizes[memo.fontSize] || '14px';
+            readBox.style.color = memo.color || '#374151';
+            readBox.style.fontWeight = memo.bold ? 'bold' : 'normal';
+            readBox.style.fontStyle = memo.italic ? 'italic' : 'normal';
+            readBox.style.textDecoration = memo.underline ? 'underline' : 'none';
+            readBox.style.textAlign = memo.align || 'left';
+
+            isDetailEditing = false;
+            document.getElementById('detailMemoReadBox').classList.remove('hidden');
+            document.getElementById('detailMemoEditBox').classList.add('hidden');
+            document.getElementById('btnMemoEditToggleText').innerText = '수정';
+        }
+
+        function togglePinCurrentMemo() {
+            const memo = memoList.find(m => m.id === currentDetailMemoId);
+            if (!memo) return;
+
+            if (memo.isPinned) {
+                memo.isPinned = false;
+            } else {
+                memoList.forEach(m => m.isPinned = false);
+                memo.isPinned = true;
+            }
+
+            saveAllDataToStorage();
+            openMemoDetail(currentDetailMemoId);
+        }
+
+        function backToMemoList() {
+            document.getElementById('memoListView').classList.remove('hidden');
+            document.getElementById('memoSearchContainer').classList.remove('hidden');
+            document.getElementById('memoDetailView').classList.add('hidden');
+            document.getElementById('modalHeaderTitle').innerText = '메모장 히스토리';
+            renderMemoList();
+        }
+
+        function toggleEditDetailMemo() {
+            isDetailEditing = !isDetailEditing;
+            const memo = memoList.find(m => m.id === currentDetailMemoId);
+            if (!memo) return;
+
+            if (isDetailEditing) {
+                document.getElementById('detailMemoReadBox').classList.add('hidden');
+                document.getElementById('detailMemoEditBox').classList.remove('hidden');
+                document.getElementById('btnMemoEditToggleText').innerText = '취소';
+
+                document.getElementById('editMemoText').value = memo.text;
+                document.getElementById('editMemoFontSize').value = memo.fontSize || 'sm';
+                document.getElementById('editMemoColor').value = memo.color || '#374151';
+
+                editMemoStyle = {
+                    bold: !!memo.bold,
+                    italic: !!memo.italic,
+                    underline: !!memo.underline,
+                    align: memo.align || 'left'
+                };
+
+                updateEditToolbarUI();
+                applyEditMemoStyle();
+            } else {
+                document.getElementById('detailMemoReadBox').classList.remove('hidden');
+                document.getElementById('detailMemoEditBox').classList.add('hidden');
+                document.getElementById('btnMemoEditToggleText').innerText = '수정';
+            }
+        }
+
+        function toggleEditOption(type) {
+            editMemoStyle[type] = !editMemoStyle[type];
+            updateEditToolbarUI();
+            applyEditMemoStyle();
+        }
+
+        function setEditAlign(align) {
+            editMemoStyle.align = align;
+            applyEditMemoStyle();
+        }
+
+        function updateEditToolbarUI() {
+            const btnMap = { bold: 'btnEditBold', italic: 'btnEditItalic', underline: 'btnEditUnderline' };
+            ['bold', 'italic', 'underline'].forEach(type => {
+                const elem = document.getElementById(btnMap[type]);
+                if (editMemoStyle[type]) {
+                    elem.classList.add('bg-amber-200', 'dark:bg-amber-800', 'text-amber-800', 'dark:text-amber-200');
+                } else {
+                    elem.classList.remove('bg-amber-200', 'dark:bg-amber-800', 'text-amber-800', 'dark:text-amber-200');
+                }
+            });
+        }
+
+        function applyEditMemoStyle() {
+            const textarea = document.getElementById('editMemoText');
+            textarea.style.fontWeight = editMemoStyle.bold ? 'bold' : 'normal';
+            textarea.style.fontStyle = editMemoStyle.italic ? 'italic' : 'normal';
+            textarea.style.textDecoration = editMemoStyle.underline ? 'underline' : 'none';
+            textarea.style.textAlign = editMemoStyle.align;
+            textarea.style.color = document.getElementById('editMemoColor').value;
+
+            const fontSizes = { xs: '12px', sm: '14px', base: '16px', lg: '18px' };
+            textarea.style.fontSize = fontSizes[document.getElementById('editMemoFontSize').value] || '14px';
+        }
+
+        function saveUpdatedMemo() {
+            const index = memoList.findIndex(m => m.id === currentDetailMemoId);
+            if (index === -1) return;
+
+            const text = document.getElementById('editMemoText').value.trim();
+            if (!text) {
+                alert('메모 내용을 입력해주세요.');
+                return;
+            }
+
+            memoList[index].text = text;
+            memoList[index].fontSize = document.getElementById('editMemoFontSize').value;
+            memoList[index].color = document.getElementById('editMemoColor').value;
+            memoList[index].bold = editMemoStyle.bold;
+            memoList[index].italic = editMemoStyle.italic;
+            memoList[index].underline = editMemoStyle.underline;
+            memoList[index].align = editMemoStyle.align;
+
+            saveAllDataToStorage();
+            alert('메모가 수정되었습니다.');
+            openMemoDetail(currentDetailMemoId);
+        }
+
+        function deleteCurrentDetailMemo() {
+            if (confirm("이 메모를 삭제하시겠습니까?")) {
+                memoList = memoList.filter(m => m.id !== currentDetailMemoId);
+                saveAllDataToStorage();
+                alert('메모가 삭제되었습니다.');
+                backToMemoList();
+            }
+        }
+
         window.onload = function() {
-            // 페이지 진입 시 비밀번호 입력란에 포커스
             document.getElementById("initialAuthPassword").focus();
             lucide.createIcons();
         };

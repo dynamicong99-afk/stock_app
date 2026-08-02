@@ -109,11 +109,11 @@
             </div>
 
             <div class="overflow-hidden mb-4">
-                <table class="w-full text-left text-xs">
+                <table class="w-full text-left text-xs table-fixed">
                     <thead>
                         <tr class="text-gray-400 border-b border-gray-100 dark:border-gray-800">
                             <th class="pb-2 font-medium">종목명</th>
-                            <th class="pb-2 text-right font-medium">매입금액 (비중)</th>
+                            <th class="pb-2 text-right font-medium w-44">매입금액 (비중)</th>
                         </tr>
                     </thead>
                     <tbody id="stock-summary-body" class="divide-y divide-gray-100 dark:divide-gray-800/60">
@@ -142,15 +142,16 @@
                     <span id="editBtnText">Edit</span>
                 </button>
             </div>
-            <p class="text-[10px] text-gray-400 mb-3">[Edit] 버튼으로 수정 가능하며, 항목 터치 시 정렬됩니다.</p>
+            <p class="text-[10px] text-gray-400 mb-3">[Edit] 버튼으로 신규 추가 및 수정 가능합니다.</p>
             
             <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs">
+                <table class="w-full text-left text-xs table-fixed">
                     <thead>
                         <tr class="text-gray-400 border-b border-gray-100 dark:border-gray-800">
                             <th class="pb-2 cursor-pointer hover:text-blue-500 transition select-none" onclick="sortTable(0)">계좌 ↕</th>
                             <th class="pb-2 cursor-pointer hover:text-blue-500 transition select-none" onclick="sortTable(1)">종목 ↕</th>
-                            <th class="pb-2 text-right cursor-pointer hover:text-blue-500 transition select-none" onclick="sortTable(2)" id="table-header-amount">매입금액 (비중) ↕</th>
+                            <th class="pb-2 text-right cursor-pointer hover:text-blue-500 transition select-none whitespace-nowrap w-44" onclick="sortTable(2)" id="table-header-amount">매입금액 (비중) ↕</th>
+                            <th id="th-delete-col" class="pb-2 text-center w-8 hidden">삭제</th>
                         </tr>
                     </thead>
                     <tbody id="account-table-body" class="divide-y divide-gray-100 dark:divide-gray-800/60">
@@ -158,6 +159,12 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- 신규 계좌 항목 추가 버튼 (편집 모드 시 표출) -->
+            <button id="btnAddAccountRow" onclick="addNewAccountRow()" class="hidden w-full mt-3 py-2 rounded-xl border border-dashed border-purple-300 dark:border-purple-800 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 text-xs font-semibold flex items-center justify-center gap-1 transition">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>신규 항목 추가</span>
+            </button>
         </div>
 
         <!-- 5. 주식 평가금 트랜드 카드 -->
@@ -410,9 +417,10 @@
 
                 <div id="accountRowsContainer" class="space-y-3"></div>
 
+                <!-- 가변적으로 늘려 추가 가능한 항목 추가 버튼 -->
                 <button type="button" onclick="addAccountRow()" class="w-full py-2 rounded-xl border border-dashed border-indigo-300 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-xs font-semibold flex items-center justify-center gap-1 transition">
                     <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                    <span>항목 추가</span>
+                    <span>+ 항목 추가</span>
                 </button>
             </div>
 
@@ -446,7 +454,6 @@
         let currentDetailMemoId = null;
         let isDetailEditing = false;
 
-        // 초기 기본 데이터 (Pin 지정 포함)
         const defaultInitialMemos = [
             {
                 id: 1770000000001,
@@ -508,7 +515,6 @@
             renderMainPinnedMemo();
         }
 
-        // 메인 화면 Pin 고정 메모 렌더링
         function renderMainPinnedMemo() {
             const container = document.getElementById('mainPinnedMemoContainer');
             if (!container) return;
@@ -549,7 +555,6 @@
             lucide.createIcons();
         }
 
-        // 새 메모 작성 모달 열기/닫기
         function openNewMemoEditor() {
             document.getElementById('newMemoText').value = '';
             document.getElementById('newMemoModal').classList.remove('hidden');
@@ -604,7 +609,6 @@
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
 
-            // 첫 메모이거나 아무것도 Pin 안된 경우 자동 Pin
             const hasPinned = memoList.some(m => m.isPinned);
 
             const newMemo = {
@@ -628,7 +632,6 @@
             alert('새 메모가 저장되었습니다.');
         }
 
-        // 메모 모달 전체화면 View 조작
         function openMemoViewModal() {
             document.getElementById('memoViewModal').classList.remove('hidden');
             backToMemoList();
@@ -640,7 +643,6 @@
             document.getElementById('memoViewModal').classList.add('hidden');
         }
 
-        // 메모 목록 렌더링 (Pin 고정 메모 최상단, 나머지 최신순)
         function renderMemoList() {
             const listContainer = document.getElementById('memoListView');
             const keyword = document.getElementById('memoSearchInput').value.trim().toLowerCase();
@@ -650,7 +652,6 @@
                 m.text.toLowerCase().includes(keyword)
             );
 
-            // Pin 고정 메모가 맨 위로 정렬되도록 배열 소팅
             filtered.sort((a, b) => {
                 if (a.isPinned && !b.isPinned) return -1;
                 if (!a.isPinned && b.isPinned) return 1;
@@ -688,7 +689,6 @@
             lucide.createIcons();
         }
 
-        // 메모 상세보기
         function openMemoDetail(id) {
             currentDetailMemoId = id;
             const memo = memoList.find(m => m.id === id);
@@ -734,7 +734,6 @@
             if (memo.isPinned) {
                 memo.isPinned = false;
             } else {
-                // 단일 Pin 보장: 기존 Pinned 메모 모두 해제
                 memoList.forEach(m => m.isPinned = false);
                 memo.isPinned = true;
             }
@@ -751,7 +750,6 @@
             renderMemoList();
         }
 
-        // 상세보기 내 수정 모드 조작
         function toggleEditDetailMemo() {
             isDetailEditing = !isDetailEditing;
             const memo = memoList.find(m => m.id === currentDetailMemoId);
@@ -1048,18 +1046,34 @@
             const editBtnText = document.getElementById("editBtnText");
             const editIcon = document.getElementById("editIcon");
             const amountHeader = document.getElementById("table-header-amount");
+            const addBtn = document.getElementById("btnAddAccountRow");
+            const deleteColHeader = document.getElementById("th-delete-col");
 
             if (isEditMode) {
                 editBtnText.innerText = "Done";
                 editIcon.setAttribute("data-lucide", "check");
                 btn.className = "px-3 py-1 rounded-xl bg-emerald-600 text-white font-semibold text-xs hover:bg-emerald-700 transition flex items-center gap-1";
                 amountHeader.innerText = "매입금액 ↕";
+                addBtn.classList.remove("hidden");
+                deleteColHeader.classList.remove("hidden");
             } else {
                 editBtnText.innerText = "Edit";
                 editIcon.setAttribute("data-lucide", "pencil");
                 btn.className = "px-3 py-1 rounded-xl bg-blue-600 text-white font-semibold text-xs hover:bg-blue-700 transition flex items-center gap-1";
                 amountHeader.innerText = "매입금액 (비중) ↕";
+                addBtn.classList.add("hidden");
+                deleteColHeader.classList.add("hidden");
             }
+            renderApp();
+        }
+
+        function addNewAccountRow() {
+            accountDataList.push({ account: "신규계좌", stock: "신규종목", amount: 0 });
+            renderApp();
+        }
+
+        function deleteAccountRow(index) {
+            accountDataList.splice(index, 1);
             renderApp();
         }
 
@@ -1505,20 +1519,25 @@
 
                 if (isEditMode) {
                     tr.innerHTML = `
-                        <td class="py-1.5 pr-1"><input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 text-xs font-medium" value="${data.account}" onchange="updateAccount(${idx}, 'account', this.value)"></td>
-                        <td class="py-1.5 px-1"><input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 text-xs font-medium" value="${data.stock}" onchange="updateAccount(${idx}, 'stock', this.value)"></td>
-                        <td class="py-1.5 pl-1 text-right">
+                        <td class="py-1.5 pr-1 overflow-hidden"><input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 text-xs font-medium" value="${data.account}" onchange="updateAccount(${idx}, 'account', this.value)"></td>
+                        <td class="py-1.5 px-1 overflow-hidden"><input type="text" class="w-full bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 text-xs font-medium" value="${data.stock}" onchange="updateAccount(${idx}, 'stock', this.value)"></td>
+                        <td class="py-1.5 px-1 text-right whitespace-nowrap w-44">
                             <div class="flex items-center justify-end gap-0.5">
-                                <input type="text" class="w-full text-right bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 text-xs font-medium" value="${displayVal}" oninput="updateAmountInput(this, ${idx})">
+                                <input type="number" class="w-full text-right bg-gray-100 dark:bg-gray-800 px-1.5 py-1 rounded border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-blue-500 text-xs font-medium" value="${data.amount}" oninput="updateAccountSilent(${idx}, 'amount', this.value)" onchange="renderApp()">
                                 <span class="text-xs text-gray-500 shrink-0">원</span>
                             </div>
+                        </td>
+                        <td class="py-1.5 pl-1 text-center w-8">
+                            <button type="button" onclick="deleteAccountRow(${idx})" class="text-gray-400 hover:text-red-500 p-1">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
                         </td>
                     `;
                 } else {
                     tr.innerHTML = `
-                        <td class="py-2 font-medium">${data.account}</td>
-                        <td class="py-2 font-medium">${data.stock}</td>
-                        <td class="py-2 text-right">
+                        <td class="py-2 font-medium truncate" title="${data.account}">${data.account}</td>
+                        <td class="py-2 font-medium truncate" title="${data.stock}">${data.stock}</td>
+                        <td class="py-2 text-right whitespace-nowrap w-44 font-medium">
                             ${displayVal}원 <span class="font-bold text-gray-700 dark:text-gray-300 ml-0.5">(${isMasked ? '0.0' : weight}%)</span>
                         </td>
                     `;
@@ -1539,11 +1558,13 @@
                 const tr = document.createElement("tr");
                 tr.className = "hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors";
                 tr.innerHTML = `
-                    <td class="py-2 font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
-                        <span class="w-2.5 h-2.5 rounded-full inline-block shrink-0" style="background-color: ${color}"></span>
-                        ${stock}
+                    <td class="py-2 font-semibold text-gray-800 dark:text-gray-200 truncate pr-2" title="${stock}">
+                        <div class="flex items-center gap-1.5 truncate">
+                            <span class="w-2.5 h-2.5 rounded-full inline-block shrink-0" style="background-color: ${color}"></span>
+                            <span class="truncate">${stock}</span>
+                        </div>
                     </td>
-                    <td class="py-2 text-right font-medium">${displayVal}원 <span class="font-bold text-gray-700 dark:text-gray-300 ml-0.5">(${isMasked ? '0.0' : weight}%)</span></td>
+                    <td class="py-2 text-right font-medium whitespace-nowrap w-44">${displayVal}원 <span class="font-bold text-gray-700 dark:text-gray-300 ml-0.5">(${isMasked ? '0.0' : weight}%)</span></td>
                 `;
                 summaryBody.appendChild(tr);
             });
@@ -1557,17 +1578,15 @@
 
         function updateAccount(index, key, value) {
             if (accountDataList[index]) {
-                accountDataList[index][key] = value.trim();
+                accountDataList[index][key] = key === 'amount' ? Number(value) || 0 : value.trim();
                 renderApp();
             }
         }
 
-        function updateAmountInput(input, index) {
+        // 입력 중 키보드 내려감 방지용 백그라운드 값 업데이트 함수
+        function updateAccountSilent(index, key, value) {
             if (accountDataList[index]) {
-                let cleanVal = input.value.replace(/[^0-9]/g, "");
-                let number = Number(cleanVal) || 0;
-                accountDataList[index].amount = number;
-                renderApp();
+                accountDataList[index][key] = Number(value) || 0;
             }
         }
 

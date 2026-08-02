@@ -134,7 +134,7 @@
             <div id="mainPinnedMemoContainer" class="pt-1"></div>
         </div>
 
-        <!-- 3. 종목별 통합 보유 현황 카드 (계좌별 상세내역 기반 자동 생성) -->
+        <!-- 3. 종목별 통합 보유 현황 카드 (매입금액 내림차순 정렬, 현금은 최하단 배치) -->
         <div class="bg-white dark:bg-brand-cardDark border border-gray-200 dark:border-gray-800/80 rounded-3xl p-5 shadow-sm dark:shadow-xl flex flex-col">
             <div class="flex justify-between items-center mb-3">
                 <h3 class="text-sm font-bold flex items-center gap-1.5">
@@ -1294,8 +1294,12 @@
             const summaryBody = document.getElementById("stock-summary-body");
             summaryBody.innerHTML = "";
 
-            // 종목명 가나다순 기본 정렬 적용
-            const sortedStocks = Object.entries(stockMap).sort((a, b) => a[0].localeCompare(b[0]));
+            // --- 종목별 통합 현황: 매입금액 내림차순 정렬 (단, '현금'은 항상 맨 마지막에 배치) ---
+            const sortedStocks = Object.entries(stockMap).sort((a, b) => {
+                if (a[0] === '현금') return 1;
+                if (b[0] === '현금') return -1;
+                return b[1] - a[1];
+            });
 
             sortedStocks.forEach(([stock, amount], index) => {
                 const weight = grandTotal > 0 ? ((amount / grandTotal) * 100).toFixed(1) : "0.0";
@@ -1745,7 +1749,7 @@
             memoList[index].bold = editMemoStyle.bold;
             memoList[index].italic = editMemoStyle.italic;
             memoList[index].underline = editMemoStyle.underline;
-            memoList[index].align = editMemoStyle.align;
+            memoList.style.textAlign = editMemoStyle.align;
 
             saveAllDataToStorage();
             alert('메모가 수정되었습니다.');

@@ -247,10 +247,9 @@
                         <span id="trendMemoEditBtnText">Edit</span>
                     </button>
                 </div>
-                <div id="trendMemoView" class="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed font-medium">3/6 : 1억 추가
-5/31 : 주식보상 30주 추가
-6/25 : 1000만원 추가
-7/12 : 주식보상 22주 추가</div>
+                <div id="trendMemoView" class="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed font-medium">예) 3/6 : 자금 추가
+예) 5/31 : 주식보상 입고
+예) 6/25 : 추가 매수</div>
                 <textarea id="trendMemoEdit" onchange="updateTrendMemo(this.value)" class="hidden w-full text-xs p-2.5 mt-1 rounded-xl border border-amber-400 bg-amber-50/50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none resize-y" rows="4"></textarea>
             </div>
             <div class="relative w-full h-[420px] mt-1">
@@ -300,7 +299,7 @@
 
     </div>
 
-    <!-- API 설정 모달 (비밀번호 보기 토글 기능 추가) -->
+    <!-- API 설정 모달 -->
     <div id="apiSettingsModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[120] flex items-center justify-center p-4 hidden">
         <div class="bg-white dark:bg-brand-cardDark border border-gray-200 dark:border-gray-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col space-y-4">
             <div class="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-gray-800">
@@ -464,7 +463,6 @@
             return result.join('\n');
         }
 
-        // 비밀번호 보기/숨기기 토글 함수
         function togglePasswordVisibility(inputId, iconId) {
             const input = document.getElementById(inputId);
             const icon = document.getElementById(iconId);
@@ -541,7 +539,6 @@
             document.getElementById("api-app-secret").value = apiSettings.appSecret || "";
             document.getElementById("api-update-interval").value = apiSettings.interval || "30";
             
-            // 모달 열 때 비밀번호 마스크 상태 초기화
             document.getElementById("api-app-key").type = "password";
             document.getElementById("keyToggleIcon").setAttribute("data-lucide", "eye");
             document.getElementById("api-app-secret").type = "password";
@@ -555,7 +552,7 @@
             apiSettings.appKey = document.getElementById("api-app-key").value.trim();
             apiSettings.appSecret = document.getElementById("api-app-secret").value.trim();
             apiSettings.interval = document.getElementById("api-update-interval").value;
-            localStorage.setItem('myStockApiSettings', JSON.stringify(apiSettings));
+            saveAllDataToStorage();
             setupAutoUpdateTimer();
             closeApiSettingsModal();
             alert("API 설정이 저장되었습니다.");
@@ -600,61 +597,66 @@
         function applyDefaultAccountSort() { accountDataList.sort((a, b) => b.amount - a.amount); }
         function resetAccountSort() { applyDefaultAccountSort(); saveAllDataToStorage(); renderApp(); }
 
-        function saveAllDataToStorage() {
-            localStorage.setItem('myStockAccountData', JSON.stringify(accountDataList));
-            localStorage.setItem('myStockTrendData', JSON.stringify(trendRawData));
-            localStorage.setItem('myStockPnlData', JSON.stringify(pnlDataList));
-            localStorage.setItem('myStockMemoList', JSON.stringify(memoList));
-            localStorage.setItem('myStockTrendMemo', trendMemoText);
-            localStorage.setItem('myStockDetailFullView', isDetailFullView);
+        // ========= [클라우드플레어 KV 연동 데이터 저장하기] =========
+        async function saveAllDataToStorage() {
+            // 다크모드 여부는 기기별 취향일 수 있으므로 로컬스토리지 유지
             localStorage.setItem('myStockDarkMode', document.documentElement.classList.contains('dark'));
-            localStorage.setItem('myLiveStockData', JSON.stringify(liveStockDataList));
-            localStorage.setItem('lastPriceUpdateTime', lastPriceUpdateTime);
-            localStorage.setItem('myStockApiSettings', JSON.stringify(apiSettings));
+
+            const allData = {
+                accountDataList,
+                trendRawData,
+                pnlDataList,
+                memoList,
+                trendMemoText,
+                liveStockDataList,
+                lastPriceUpdateTime,
+                isDetailFullView,
+                apiSettings
+            };
+
+            try {
+                await fetch('https://stockmanage.dynamicong99.workers.dev?action=save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(allData)
+                });
+            } catch (e) {
+                console.error("클라우드 데이터 저장 실패", e);
+            }
         }
 
-        function loadAllDataFromStorage() {
+        // ========= [클라우드플레어 KV 연동 데이터 불러오기] =========
+        async function loadAllDataFromStorage() {
             try {
-                const acc = localStorage.getItem('myStockAccountData');
-                if (acc) accountDataList = JSON.parse(acc);
-                else applyDefaultAccountSort();
-
-                const trend = localStorage.getItem('myStockTrendData');
-                if (trend) trendRawData = JSON.parse(trend);
-
-                const pnl = localStorage.getItem('myStockPnlData');
-                if (pnl) pnlDataList = JSON.parse(pnl);
-
-                const memo = localStorage.getItem('myStockMemoList');
-                if (memo) memoList = JSON.parse(memo);
-                else memoList = [...defaultInitialMemos];
-
-                const tMemo = localStorage.getItem('myStockTrendMemo');
-                if (tMemo !== null) {
-                    trendMemoText = tMemo;
+                const response = await fetch('https://stockmanage.dynamicong99.workers.dev?action=load', { cache: 'no-store' });
+                const data = await response.json();
+                
+                if (data) {
+                    accountDataList = data.accountDataList || accountDataList;
+                    trendRawData = data.trendRawData || trendRawData;
+                    pnlDataList = data.pnlDataList || pnlDataList;
+                    memoList = data.memoList || [...defaultInitialMemos];
+                    trendMemoText = data.trendMemoText !== undefined ? data.trendMemoText : trendMemoText;
+                    liveStockDataList = data.liveStockDataList || liveStockDataList;
+                    lastPriceUpdateTime = data.lastPriceUpdateTime || "-";
+                    isDetailFullView = data.isDetailFullView !== undefined ? data.isDetailFullView : isDetailFullView;
+                    if (data.apiSettings) apiSettings = data.apiSettings;
+                    
                     const vElem = document.getElementById("trendMemoView");
-                    if (vElem) vElem.innerText = tMemo;
-                }
-
-                const liveData = localStorage.getItem('myLiveStockData');
-                if (liveData) {
-                    liveStockDataList = JSON.parse(liveData);
+                    if (vElem) vElem.innerText = trendMemoText;
                 } else {
-                    liveStockDataList = [
-                        { id: 1, account: "예시계좌", stock: "예시종목", code: "", purchaseAmount: 0, averagePrice: 0, quantity: 0, currentPrice: null }
-                    ];
+                    applyDefaultAccountSort();
                 }
+            } catch (e) {
+                console.error("클라우드 데이터 로드 실패, 기본값 사용", e);
+                applyDefaultAccountSort();
+            }
 
-                const savedApi = localStorage.getItem('myStockApiSettings');
-                if (savedApi) {
-                    apiSettings = JSON.parse(savedApi);
-                }
-
-                const savedTime = localStorage.getItem('lastPriceUpdateTime');
-                if (savedTime) lastPriceUpdateTime = savedTime;
-
-                if (localStorage.getItem('myStockDarkMode') === 'true') document.documentElement.classList.add('dark');
-            } catch (e) { console.error(e); }
+            if (localStorage.getItem('myStockDarkMode') === 'true') {
+                document.documentElement.classList.add('dark');
+            }
+            
+            renderApp();
         }
 
         function exportBackup() {
@@ -709,12 +711,12 @@
             reader.readAsText(file);
         }
 
-        function handleInitialAuth(event) {
+        async function handleInitialAuth(event) {
             event.preventDefault();
             const pwInput = document.getElementById("initialAuthPassword");
             if (pwInput.value.trim() === "0713") {
                 document.getElementById("authOverlay").classList.add("hidden");
-                loadAllDataFromStorage();
+                await loadAllDataFromStorage();
                 applyDefaultAccountSort();
                 setupAutoUpdateTimer();
                 renderApp();
@@ -1195,7 +1197,7 @@
             }
             lucide.createIcons();
         }
-        function updateTrendMemo(value) { trendMemoText = value; }
+        function updateTrendMemo(value) { trendMemoText = value; saveAllDataToStorage(); }
 
         function toggleDetailFullView() {
             isDetailFullView = !isDetailFullView;

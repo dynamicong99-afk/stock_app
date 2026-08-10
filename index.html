@@ -458,7 +458,11 @@
         async function fetchStockPriceViaProxy(stockCode) {
             try {
                 if (!stockCode) return null;
-                const proxyUrl = `https://stockmanage.dynamicong99.workers.dev?code=${stockCode}`;
+                // 🟢 종목코드 앞뒤 공백 제거 및 6자리 정제
+                const cleanCode = String(stockCode).trim();
+                if (cleanCode.length === 0) return null;
+
+                const proxyUrl = `https://stockmanage.dynamicong99.workers.dev?code=${cleanCode}`;
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 8000);
                 const response = await fetch(proxyUrl, { signal: controller.signal, cache: 'no-store' });
@@ -473,7 +477,8 @@
         }
 
         async function updateAllStockPrices() {
-            let uniqueCodes = [...new Set(liveStockDataList.map(item => item.code).filter(Boolean))];
+            // 🟢 모든 종목의 코드를 추출할 때 공백 제거 및 중복 제거
+            let uniqueCodes = [...new Set(liveStockDataList.map(item => item.code ? String(item.code).trim() : "").filter(Boolean))];
             if (uniqueCodes.length === 0) { alert("등록된 종목코드가 없습니다. 종목 추가에서 6자리 코드를 입력해주세요."); return; }
 
             const btn = document.getElementById('priceUpdateBtn');
@@ -490,12 +495,13 @@
                 }
             }
 
-            // 🟢 핵심 수정: 동일한 종목코드를 가진 모든 개별 계좌 항목(acc)에 현재가 일괄 정상 반영
+            // 개별 계좌 아이템들에 현재가 반영
             liveStockDataList.forEach(item => {
-                if (item.code && priceMap[item.code]) {
-                    item.currentPrice = priceMap[item.code];
+                let itemCode = item.code ? String(item.code).trim() : "";
+                if (itemCode && priceMap[itemCode]) {
+                    item.currentPrice = priceMap[itemCode];
                     updatedCount++;
-                } else if (item.code && !priceMap[item.code]) {
+                } else if (itemCode && !priceMap[itemCode]) {
                     if (!failedStocks.includes(item.stock)) {
                         failedStocks.push(item.stock);
                     }
@@ -767,7 +773,6 @@
             });
 
             Object.values(groups).forEach(group => {
-                // 그룹 내 모든 계좌의 현재가(currentPrice)가 유효한지 확인하고 총 평가금 산출
                 let groupEval = 0;
                 let hasAllPrices = true;
                 group.accounts.forEach(acc => {

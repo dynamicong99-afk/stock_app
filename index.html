@@ -490,6 +490,7 @@
                 }
             }
 
+            // 🟢 핵심 수정: 동일한 종목코드를 가진 모든 개별 계좌 항목(acc)에 현재가 일괄 정상 반영
             liveStockDataList.forEach(item => {
                 if (item.code && priceMap[item.code]) {
                     item.currentPrice = priceMap[item.code];
@@ -766,16 +767,24 @@
             });
 
             Object.values(groups).forEach(group => {
-                let sampleAcc = group.accounts[0];
-                let hasPrice = (sampleAcc.currentPrice > 0);
-                let currentPrice = hasPrice ? sampleAcc.currentPrice : null;
-                let totalEval = hasPrice ? currentPrice * group.totalQty : 0;
-                let profit = hasPrice ? totalEval - group.totalPurchase : 0;
-                let rate = (hasPrice && group.totalPurchase > 0) ? (profit / group.totalPurchase) * 100 : 0;
+                // 그룹 내 모든 계좌의 현재가(currentPrice)가 유효한지 확인하고 총 평가금 산출
+                let groupEval = 0;
+                let hasAllPrices = true;
+                group.accounts.forEach(acc => {
+                    if (acc.currentPrice > 0) {
+                        groupEval += acc.currentPrice * acc.quantity;
+                    } else {
+                        hasAllPrices = false;
+                    }
+                });
+
+                let representativePrice = group.accounts.find(acc => acc.currentPrice > 0)?.currentPrice || null;
+                let profit = hasAllPrices ? groupEval - group.totalPurchase : 0;
+                let rate = (hasAllPrices && group.totalPurchase > 0) ? (profit / group.totalPurchase) * 100 : 0;
 
                 let headerColorClass = profit > 0 ? 'text-red-500' : (profit < 0 ? 'text-blue-500' : 'text-gray-900');
-                let displayEvalStr = hasPrice ? (isMasked ? '******' : totalEval.toLocaleString() + '원') : '-';
-                let displayRateStr = hasPrice ? `${profit > 0 ? '+' : ''}${rate.toFixed(2)}%` : '-';
+                let displayEvalStr = hasAllPrices ? (isMasked ? '******' : groupEval.toLocaleString() + '원') : '-';
+                let displayRateStr = hasAllPrices ? `${profit > 0 ? '+' : ''}${rate.toFixed(2)}%` : '-';
                 let displayQtyStr = isMasked ? '******' : `${group.totalQty.toLocaleString()}주`;
 
                 let html = `
@@ -785,11 +794,11 @@
                                 <div class="text-sm font-black text-gray-900 dark:text-white">${escapeHtml(group.stock)} <span class="text-[10px] text-gray-400">(${escapeHtml(group.code || '')})</span></div>
                                 <div class="text-xs font-bold text-gray-500">총 ${displayQtyStr}</div>
                             </div>
-                            <div class="text-[11px] text-gray-500 mb-2">현재가: <b>${isMasked ? '******' : (hasPrice ? currentPrice.toLocaleString() + '원' : '-')}</b></div>
+                            <div class="text-[11px] text-gray-500 mb-2">현재가: <b>${isMasked ? '******' : (representativePrice ? representativePrice.toLocaleString() + '원' : '-')}</b></div>
                             <div class="grid grid-cols-3 gap-2 text-center text-[11px] bg-gray-50 dark:bg-gray-900/60 p-2 rounded-xl">
                                 <div><div class="text-gray-500">총 매입</div><div class="font-bold">${isMasked ? '******' : group.totalPurchase.toLocaleString()}원</div></div>
                                 <div><div class="text-gray-500">총 평가</div><div class="font-bold">${displayEvalStr}</div></div>
-                                <div><div class="text-gray-500">수익률</div><div class="font-bold ${headerColorClass}">${isMasked ? '******' : (hasPrice ? displayRateStr : '-')}</div></div>
+                                <div><div class="text-gray-500">수익률</div><div class="font-bold ${headerColorClass}">${isMasked ? '******' : (hasAllPrices ? displayRateStr : '-')}</div></div>
                             </div>
                         </div>
                         <div class="space-y-2">

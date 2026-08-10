@@ -490,7 +490,15 @@
                 let fetchedPrice = await fetchStockPriceViaProxy(code);
                 if (fetchedPrice !== null && !isNaN(fetchedPrice) && fetchedPrice > 0) {
                     priceMap[code] = fetchedPrice;
+                } else {
+                    let targetItem = liveStockDataList.find(i => String(i.code).trim() === code);
+                    if (targetItem && !failedStocks.includes(targetItem.stock)) {
+                        failedStocks.push(targetItem.stock);
+                    }
                 }
+                
+                // 🟢 한투 API 초당 호출 제한(Rate Limit)을 피하기 위한 0.2초 딜레이 추가
+                await new Promise(resolve => setTimeout(resolve, 200));
             }
 
             liveStockDataList.forEach(item => {
@@ -498,10 +506,6 @@
                 if (itemCode && priceMap[itemCode]) {
                     item.currentPrice = priceMap[itemCode];
                     updatedCount++;
-                } else if (itemCode && !priceMap[itemCode]) {
-                    if (!failedStocks.includes(item.stock)) {
-                        failedStocks.push(item.stock);
-                    }
                 }
             });
 
@@ -812,7 +816,6 @@
                     let accProfit = accHasPrice ? accEval - acc.purchaseAmount : 0;
                     let accRate = (accHasPrice && acc.purchaseAmount > 0) ? (accProfit / acc.purchaseAmount) * 100 : 0;
                     
-                    // 🟢 플러스면 빨간색, 마이너스면 파란색 컬러 클래스 적용
                     let accColor = accProfit > 0 ? 'text-red-500 dark:text-red-400' : (accProfit < 0 ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500');
                     
                     let displayAccPurchase = isMasked ? '******' : (acc.purchaseAmount || 0).toLocaleString() + '원';

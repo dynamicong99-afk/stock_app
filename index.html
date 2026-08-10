@@ -458,7 +458,6 @@
         async function fetchStockPriceViaProxy(stockCode) {
             try {
                 if (!stockCode) return null;
-                // 🟢 종목코드 앞뒤 공백 제거 및 6자리 정제
                 const cleanCode = String(stockCode).trim();
                 if (cleanCode.length === 0) return null;
 
@@ -477,7 +476,6 @@
         }
 
         async function updateAllStockPrices() {
-            // 🟢 모든 종목의 코드를 추출할 때 공백 제거 및 중복 제거
             let uniqueCodes = [...new Set(liveStockDataList.map(item => item.code ? String(item.code).trim() : "").filter(Boolean))];
             if (uniqueCodes.length === 0) { alert("등록된 종목코드가 없습니다. 종목 추가에서 6자리 코드를 입력해주세요."); return; }
 
@@ -495,7 +493,6 @@
                 }
             }
 
-            // 개별 계좌 아이템들에 현재가 반영
             liveStockDataList.forEach(item => {
                 let itemCode = item.code ? String(item.code).trim() : "";
                 if (itemCode && priceMap[itemCode]) {
@@ -813,10 +810,14 @@
                     let accHasPrice = (acc.currentPrice > 0);
                     let accEval = accHasPrice ? (acc.currentPrice * acc.quantity) : null;
                     let accProfit = accHasPrice ? accEval - acc.purchaseAmount : 0;
-                    let accColor = accProfit > 0 ? 'text-red-500' : (accProfit < 0 ? 'text-blue-500' : 'text-gray-500');
+                    let accRate = (accHasPrice && acc.purchaseAmount > 0) ? (accProfit / acc.purchaseAmount) * 100 : 0;
+                    
+                    // 🟢 플러스면 빨간색, 마이너스면 파란색 컬러 클래스 적용
+                    let accColor = accProfit > 0 ? 'text-red-500 dark:text-red-400' : (accProfit < 0 ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500');
                     
                     let displayAccPurchase = isMasked ? '******' : (acc.purchaseAmount || 0).toLocaleString() + '원';
                     let displayAccEval = isMasked ? '******' : (accHasPrice ? accEval.toLocaleString() + '원' : '-');
+                    let displayAccRate = accHasPrice ? `${accProfit > 0 ? '+' : ''}${accRate.toFixed(1)}%` : '';
                     let displayAccQty = isMasked ? '******' : `${acc.quantity || 0}주`;
 
                     html += `
@@ -827,7 +828,7 @@
                             </div>
                             <div class="text-right">
                                 <div class="text-[11px] font-bold text-gray-900 dark:text-white">매입: ${displayAccPurchase}</div>
-                                <div class="text-[10px] ${accColor}">평가: ${displayAccEval}</div>
+                                <div class="text-[10px] font-bold ${accColor}">평가: ${displayAccEval} ${displayAccRate ? `(${displayAccRate})` : ''}</div>
                             </div>
                         </div>
                     `;

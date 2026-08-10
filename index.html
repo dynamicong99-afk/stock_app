@@ -495,6 +495,8 @@
 
             const now = new Date();
             lastPriceUpdateTime = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+            
+            // 로컬 스토리지에 즉시 저장
             saveAllDataToStorage();
             renderLiveStocks();
 
@@ -572,51 +574,48 @@
             renderPnlEditRows();
         }
 
-        async function saveAllDataToStorage() {
+        // 🟢 로컬 스토리지에 안전하게 영구 저장 (데이터 유실 방지)
+        function saveAllDataToStorage() {
             localStorage.setItem('myStockDarkMode', document.documentElement.classList.contains('dark'));
-
-            const allData = {
-                trendRawData,
-                pnlDataList,
-                memoList,
-                trendMemoText,
-                liveStockDataList,
-                lastPriceUpdateTime,
-                apiSettings
-            };
-
-            try {
-                await fetch('https://stockmanage.dynamicong99.workers.dev?action=save', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(allData)
-                });
-            } catch (e) {
-                console.error("클라우드 데이터 저장 실패", e);
-            }
+            localStorage.setItem('myStockTrendRawData', JSON.stringify(trendRawData));
+            localStorage.setItem('myStockPnlDataList', JSON.stringify(pnlDataList));
+            localStorage.setItem('myStockMemoList', JSON.stringify(memoList));
+            localStorage.setItem('myStockTrendMemoText', trendMemoText);
+            localStorage.setItem('myStockLiveStockDataList', JSON.stringify(liveStockDataList));
+            localStorage.setItem('myStockLastPriceUpdateTime', lastPriceUpdateTime);
+            localStorage.setItem('myStockApiSettings', JSON.stringify(apiSettings));
         }
 
-        async function loadAllDataFromStorage() {
+        // 🟢 로컬 스토리지에서 안전하게 데이터 불러오기
+        function loadAllDataFromStorage() {
             try {
-                const response = await fetch('https://stockmanage.dynamicong99.workers.dev?action=load', { cache: 'no-store' });
-                const data = await response.json();
-                
-                if (data) {
-                    if (Array.isArray(data.trendRawData) && data.trendRawData.length > 0) {
-                        trendRawData = data.trendRawData;
-                    }
-                    pnlDataList = data.pnlDataList || pnlDataList;
-                    memoList = data.memoList || [...defaultInitialMemos];
-                    trendMemoText = data.trendMemoText !== undefined ? data.trendMemoText : trendMemoText;
-                    liveStockDataList = data.liveStockDataList || liveStockDataList;
-                    lastPriceUpdateTime = data.lastPriceUpdateTime || "-";
-                    if (data.apiSettings) apiSettings = data.apiSettings;
-                    
-                    const vElem = document.getElementById("trendMemoView");
-                    if (vElem) vElem.innerText = trendMemoText;
-                }
+                const tData = localStorage.getItem('myStockTrendRawData');
+                if (tData) trendRawData = JSON.parse(tData);
+
+                const pData = localStorage.getItem('myStockPnlDataList');
+                if (pData) pnlDataList = JSON.parse(pData);
+
+                const mData = localStorage.getItem('myStockMemoList');
+                if (mData) memoList = JSON.parse(mData);
+                else memoList = [...defaultInitialMemos];
+
+                const tmData = localStorage.getItem('myStockTrendMemoText');
+                if (tmData !== null) trendMemoText = tmData;
+
+                const lData = localStorage.getItem('myStockLiveStockDataList');
+                if (lData) liveStockDataList = JSON.parse(lData);
+
+                const luTime = localStorage.getItem('myStockLastPriceUpdateTime');
+                if (luTime) lastPriceUpdateTime = luTime;
+
+                const aData = localStorage.getItem('myStockApiSettings');
+                if (aData) apiSettings = JSON.parse(aData);
+
+                const vElem = document.getElementById("trendMemoView");
+                if (vElem) vElem.innerText = trendMemoText;
+
             } catch (e) {
-                console.error("클라우드 데이터 로드 실패, 기본값 사용", e);
+                console.error("로컬 스토리지 로드 실패", e);
             }
 
             if (localStorage.getItem('myStockDarkMode') === 'true') {
@@ -676,12 +675,12 @@
             reader.readAsText(file);
         }
 
-        async function handleInitialAuth(event) {
+        function handleInitialAuth(event) {
             event.preventDefault();
             const pwInput = document.getElementById("initialAuthPassword");
             if (pwInput.value.trim() === "0713") {
                 document.getElementById("authOverlay").classList.add("hidden");
-                await loadAllDataFromStorage();
+                loadAllDataFromStorage();
                 setupAutoUpdateTimer();
                 renderApp();
             } else {
@@ -1279,7 +1278,6 @@
             target.isPinned = willPin;
             saveAllDataToStorage();
             renderMemoListView();
-            renderMainPinnedNest();
             renderMainPinnedMemo();
         }
         function deleteMemo(id) {

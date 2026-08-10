@@ -481,29 +481,37 @@
 
             let updatedCount = 0;
             let failedStocks = [];
-            for (let item of liveStockDataList) {
-                if (item.code) {
-                    let fetchedPrice = await fetchStockPriceViaProxy(item.code);
-                    if (fetchedPrice !== null && !isNaN(fetchedPrice)) {
-                        item.currentPrice = fetchedPrice;
-                        updatedCount++;
-                    } else if (!failedStocks.includes(item.stock)) {
+
+            let priceMap = {};
+            for (let code of uniqueCodes) {
+                let fetchedPrice = await fetchStockPriceViaProxy(code);
+                if (fetchedPrice !== null && !isNaN(fetchedPrice) && fetchedPrice > 0) {
+                    priceMap[code] = fetchedPrice;
+                }
+            }
+
+            liveStockDataList.forEach(item => {
+                if (item.code && priceMap[item.code]) {
+                    item.currentPrice = priceMap[item.code];
+                    updatedCount++;
+                } else if (item.code && !priceMap[item.code]) {
+                    if (!failedStocks.includes(item.stock)) {
                         failedStocks.push(item.stock);
                     }
                 }
-            }
+            });
 
             const now = new Date();
             lastPriceUpdateTime = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
             
-            // 로컬 스토리지에 즉시 저장
             saveAllDataToStorage();
             renderLiveStocks();
+            updateChartBasedOnLiveStocks();
 
             if (btn) btn.disabled = false;
 
-            let msg = `현재가 업데이트 완료 (성공 종목: ${updatedCount}개)`;
-            if (failedStocks.length > 0) msg += `\n실패: ${failedStocks.join(', ')}`;
+            let msg = `현재가 업데이트 완료 (성공 항목: ${updatedCount}개)`;
+            if (failedStocks.length > 0) msg += `\n실패 종목: ${failedStocks.join(', ')}`;
             alert(msg);
         }
 
@@ -574,7 +582,6 @@
             renderPnlEditRows();
         }
 
-        // 🟢 로컬 스토리지에 안전하게 영구 저장 (데이터 유실 방지)
         function saveAllDataToStorage() {
             localStorage.setItem('myStockDarkMode', document.documentElement.classList.contains('dark'));
             localStorage.setItem('myStockTrendRawData', JSON.stringify(trendRawData));
@@ -586,7 +593,6 @@
             localStorage.setItem('myStockApiSettings', JSON.stringify(apiSettings));
         }
 
-        // 🟢 로컬 스토리지에서 안전하게 데이터 불러오기
         function loadAllDataFromStorage() {
             try {
                 const tData = localStorage.getItem('myStockTrendRawData');

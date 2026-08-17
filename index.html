@@ -139,6 +139,22 @@
                     <div id="total-rate-text" class="text-xs font-black text-gray-900 dark:text-white truncate">-</div>
                 </div>
             </div>
+            
+            <!-- 손익금 항목들 -->
+            <div class="grid grid-cols-3 gap-2 pt-2 mt-1 border-t border-gray-100 dark:border-gray-800/60 text-center">
+                <div class="bg-gray-50 dark:bg-gray-900/50 p-2.5 rounded-2xl border border-gray-100 dark:border-gray-800/60">
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400 mb-1 font-medium">확정손익금</p>
+                    <div id="realized-pnl-text" class="text-xs font-black text-gray-900 dark:text-white truncate">0억</div>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-900/50 p-2.5 rounded-2xl border border-gray-100 dark:border-gray-800/60">
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400 mb-1 font-medium">실시간손익금</p>
+                    <div id="realtime-pnl-text" class="text-xs font-black text-gray-900 dark:text-white truncate">0억</div>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-900/50 p-2.5 rounded-2xl border border-gray-100 dark:border-gray-800/60">
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400 mb-1 font-medium">총 손익금</p>
+                    <div id="total-pnl-text" class="text-xs font-black text-gray-900 dark:text-white truncate">0억</div>
+                </div>
+            </div>
         </div>
 
         <!-- 3. 종목별 평가 현황 카드 -->
@@ -391,6 +407,7 @@
         let pieChart = null, trendChart = null, pnlChart = null;
         let trendMemoText = `예) 3/6 : 자금 추가\n예) 5/31 : 주식보상 입고\n예) 6/25 : 추가 매수`;
         let memoList = [];
+        let editingMemoId = null; // 🟢 편집 중인 메모 ID 저장
         let liveStockDataList = [];
         let lastPriceUpdateTime = "-";
         
@@ -497,7 +514,6 @@
                     }
                 }
                 
-                // 🟢 한투 API 초당 호출 제한(Rate Limit)을 피하기 위한 0.2초 딜레이 추가
                 await new Promise(resolve => setTimeout(resolve, 200));
             }
 
@@ -558,9 +574,13 @@
             isPnlEditMode = !isPnlEditMode;
             document.getElementById("pnlEditContainer").classList.toggle("hidden", !isPnlEditMode);
             document.getElementById("pnlEditIcon").setAttribute("data-lucide", isPnlEditMode ? "check" : "pencil");
-            document.getElementById("pnlEditBtnText").innerText = isPnlEditMode ? "완료" : "Edit";
-            if (isPnlEditMode) renderPnlEditRows();
-            else { saveAllDataToStorage(); updatePnlChart(); }
+            if (isPnlEditMode) {
+                renderPnlEditRows();
+            } else { 
+                saveAllDataToStorage(); 
+                updatePnlChart(); 
+                updateTopTotalAssets(); 
+            }
             lucide.createIcons();
         }
         function renderPnlEditRows() {
@@ -722,34 +742,89 @@
             if (!amount || amount === 0) return "0억";
             let eok = amount / 100000000;
             let truncated = Math.floor(eok * 100) / 100;
-            return truncated.toFixed(2) + "억";
+            return parseFloat(truncated.toFixed(2)) + "억";
         }
 
         function updateTopTotalAssets() {
-            let totalPurchase = 0, totalEval = 0, hasValidPrice = true;
+            let totalPurchase = 0;
+            let totalEval = 0;
+            
             liveStockDataList.forEach(item => {
-                totalPurchase += item.purchaseAmount || 0;
-                if (item.currentPrice > 0) totalEval += (item.currentPrice * item.quantity);
-                else hasValidPrice = false;
+                let pur = item.purchaseAmount || 0;
+                totalPurchase += pur;
+                
+                if (item.currentPrice > 0) {
+                    totalEval += (item.currentPrice * (item.quantity || 0));
+                } else {
+                    totalEval += pur; 
+                }
             });
+
+            let realizedPnlThisYear = 0;
+            const currentYearStr2 = String(new Date().getFullYear()).slice(-2);
+            const currentYearStr4 = String(new Date().getFullYear());
+            pnlDataList.forEach(item => {
+                let y = String(item.year || "");
+                if (y.includes(currentYearStr2) || y.includes(currentYearStr4)) {
+                    realizedPnlThisYear += (Number(item.amount) || 0);
+                }
+            });
+
+            let realtimePnl = totalEval - totalPurchase;
+            let totalPnl = realizedPnlThisYear + realtimePnl;
 
             const purTextElem = document.getElementById("total-purchase-text");
             const evalTextElem = document.getElementById("total-eval-text");
             const rateTextElem = document.getElementById("total-rate-text");
 
+            const realizedPnlElem = document.getElementById("realized-pnl-text");
+            const realtimePnlElem = document.getElementById("realtime-pnl-text");
+            const totalPnlElem = document.getElementById("total-pnl-text");
+
             purTextElem.innerText = formatAmountBillion(totalPurchase);
-            if (liveStockDataList.length === 0 || !hasValidPrice) {
-                evalTextElem.innerText = "-"; rateTextElem.innerText = "-"; return;
+
+            const getColorClass = (val) => {
+                if (val > 0) return 'text-red-500 dark:text-red-400';
+                if (val < 0) return 'text-blue-500 dark:text-blue-400';
+                return 'text-gray-900 dark:text-white';
+            };
+
+            if (liveStockDataList.length === 0) {
+                evalTextElem.innerText = "-"; 
+                rateTextElem.innerText = "-"; 
+                if (realizedPnlElem) {
+                    realizedPnlElem.innerText = formatAmountBillion(realizedPnlThisYear);
+                    realizedPnlElem.className = `text-xs font-black truncate ${getColorClass(realizedPnlThisYear)}`;
+                }
+                if (realtimePnlElem) realtimePnlElem.innerText = "-";
+                if (totalPnlElem) {
+                    totalPnlElem.innerText = formatAmountBillion(realizedPnlThisYear);
+                    totalPnlElem.className = `text-xs font-black truncate ${getColorClass(realizedPnlThisYear)}`;
+                }
+                return;
             }
 
             let profit = totalEval - totalPurchase;
             let rate = totalPurchase > 0 ? (profit / totalPurchase) * 100 : 0;
-            let colorClass = profit > 0 ? 'text-red-500 dark:text-red-400' : (profit < 0 ? 'text-blue-500 dark:text-blue-400' : 'text-gray-900');
-
+            
             evalTextElem.innerText = formatAmountBillion(totalEval);
-            evalTextElem.className = `text-xs font-black truncate ${colorClass}`;
-            rateTextElem.innerText = isMasked ? "******" : `${profit > 0 ? '+' : ''}${rate.toFixed(2)}%`;
-            rateTextElem.className = `text-xs font-black truncate ${colorClass}`;
+            evalTextElem.className = `text-xs font-black truncate ${getColorClass(profit)}`;
+            
+            rateTextElem.innerText = isMasked ? "******" : `${profit > 0 ? '+' : ''}${rate.toFixed(1)}%`;
+            rateTextElem.className = `text-xs font-black truncate ${getColorClass(profit)}`;
+
+            if (realizedPnlElem) {
+                realizedPnlElem.innerText = formatAmountBillion(realizedPnlThisYear);
+                realizedPnlElem.className = `text-xs font-black truncate ${getColorClass(realizedPnlThisYear)}`;
+            }
+            if (realtimePnlElem) {
+                realtimePnlElem.innerText = formatAmountBillion(realtimePnl);
+                realtimePnlElem.className = `text-xs font-black truncate ${getColorClass(realtimePnl)}`;
+            }
+            if (totalPnlElem) {
+                totalPnlElem.innerText = formatAmountBillion(totalPnl);
+                totalPnlElem.className = `text-xs font-black truncate ${getColorClass(totalPnl)}`;
+            }
         }
 
         function renderLiveStocks() {
@@ -790,7 +865,7 @@
 
                 let headerColorClass = profit > 0 ? 'text-red-500' : (profit < 0 ? 'text-blue-500' : 'text-gray-900');
                 let displayEvalStr = hasAllPrices ? (isMasked ? '******' : groupEval.toLocaleString() + '원') : '-';
-                let displayRateStr = hasAllPrices ? `${profit > 0 ? '+' : ''}${rate.toFixed(2)}%` : '-';
+                let displayRateStr = hasAllPrices ? `${profit > 0 ? '+' : ''}${rate.toFixed(1)}%` : '-';
                 let displayQtyStr = isMasked ? '******' : `${group.totalQty.toLocaleString()}주`;
 
                 let html = `
@@ -1272,11 +1347,46 @@
             renderMainPinnedMemo();
             closeNewMemoEditor();
         }
+        
+        // 🟢 메모 히스토리 모달 조작 및 편집 기능 🟢
         function openMemoViewModal() {
+            editingMemoId = null;
             renderMemoListView();
             document.getElementById('memoViewModal').classList.remove('hidden');
         }
-        function closeMemoViewModal() { document.getElementById('memoViewModal').classList.add('hidden'); }
+        function closeMemoViewModal() { 
+            editingMemoId = null;
+            document.getElementById('memoViewModal').classList.add('hidden'); 
+        }
+
+        function startEditMemo(id) {
+            editingMemoId = id;
+            renderMemoListView();
+        }
+
+        function cancelEditMemo() {
+            editingMemoId = null;
+            renderMemoListView();
+        }
+
+        function saveEditedMemo(id) {
+            const textarea = document.getElementById(`editMemoInput_${id}`);
+            if (!textarea) return;
+            const newText = textarea.value.trim();
+            if (!newText) {
+                alert("내용을 입력해주세요.");
+                return;
+            }
+            const memo = memoList.find(m => m.id === id);
+            if (memo) {
+                memo.text = newText;
+                editingMemoId = null;
+                saveAllDataToStorage();
+                renderMemoListView();
+                renderMainPinnedMemo();
+            }
+        }
+
         function renderMemoListView() {
             const listEl = document.getElementById('memoListView');
             if (!listEl) return;
@@ -1284,16 +1394,35 @@
                 listEl.innerHTML = `<div class="py-8 text-center text-xs text-gray-400">저장된 메모가 없습니다.</div>`;
                 return;
             }
-            listEl.innerHTML = memoList.map(m => `
-                <div class="p-3.5 rounded-2xl border ${m.isPinned ? 'border-amber-300 bg-amber-50/40' : 'border-gray-200 dark:border-gray-800'} space-y-2">
-                    <div class="text-xs font-medium whitespace-pre-line text-gray-800 dark:text-gray-200">${escapeHtml(m.text)}</div>
-                    <div class="flex justify-end gap-1.5">
-                        <button onclick="toggleMemoPin(${m.id})" class="px-2 py-1 rounded-lg text-[10px] font-semibold border ${m.isPinned ? 'bg-amber-500 text-white border-amber-500' : 'bg-amber-500/10 text-amber-600 border-amber-500/20'}">${m.isPinned ? '고정됨' : '고정하기'}</button>
-                        <button onclick="deleteMemo(${m.id})" class="px-2 py-1 rounded-lg text-[10px] font-semibold bg-red-50 text-red-500 border border-red-200">삭제</button>
-                    </div>
-                </div>
-            `).join('');
+            listEl.innerHTML = memoList.map(m => {
+                if (m.id === editingMemoId) {
+                    return `
+                        <div class="p-3.5 rounded-2xl border border-amber-400 bg-amber-50/60 dark:bg-gray-900 space-y-2">
+                            <textarea id="editMemoInput_${m.id}" class="w-full text-xs p-2.5 rounded-xl border border-amber-300 dark:border-amber-500/50 dark:bg-gray-800 dark:text-white focus:outline-none focus:border-amber-500 resize-y" rows="4">${escapeHtml(m.text)}</textarea>
+                            <div class="flex justify-end gap-1.5">
+                                <button onclick="cancelEditMemo()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">취소</button>
+                                <button onclick="saveEditedMemo(${m.id})" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-white hover:bg-amber-600 transition">저장</button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div class="p-3.5 rounded-2xl border ${m.isPinned ? 'border-amber-300 bg-amber-50/40' : 'border-gray-200 dark:border-gray-800'} space-y-2">
+                            <div onclick="startEditMemo(${m.id})" title="클릭하여 편집" class="text-xs font-medium whitespace-pre-line text-gray-800 dark:text-gray-200 cursor-pointer hover:text-amber-600 dark:hover:text-amber-400 transition flex justify-between items-start group">
+                                <span class="flex-1">${escapeHtml(m.text)}</span>
+                                <i data-lucide="pencil" class="w-3.5 h-3.5 text-gray-400 opacity-0 group-hover:opacity-100 transition shrink-0 ml-1.5 mt-0.5"></i>
+                            </div>
+                            <div class="flex justify-end gap-1.5 pt-1">
+                                <button onclick="toggleMemoPin(${m.id})" class="px-2 py-1 rounded-lg text-[10px] font-semibold border ${m.isPinned ? 'bg-amber-500 text-white border-amber-500' : 'bg-amber-500/10 text-amber-600 border-amber-500/20'}">${m.isPinned ? '고정됨' : '고정하기'}</button>
+                                <button onclick="deleteMemo(${m.id})" class="px-2 py-1 rounded-lg text-[10px] font-semibold bg-red-50 text-red-500 border border-red-200">삭제</button>
+                            </div>
+                        </div>
+                    `;
+                }
+            }).join('');
+            lucide.createIcons();
         }
+
         function toggleMemoPin(id) {
             const target = memoList.find(m => m.id === id);
             if (!target) return;
@@ -1304,9 +1433,11 @@
             renderMemoListView();
             renderMainPinnedMemo();
         }
+
         function deleteMemo(id) {
             if (!confirm("메모를 삭제하시겠습니까?")) return;
             memoList = memoList.filter(m => m.id !== id);
+            if (editingMemoId === id) editingMemoId = null;
             saveAllDataToStorage();
             renderMemoListView();
             renderMainPinnedMemo();

@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#f3f4f8">
+    <title>주식 자산</title>
+
+    <!-- 다크모드 깜빡임 방지: 렌더 전에 테마 먼저 적용 -->
+    <script>
+        (function () {
+            try {
+                var v = localStorage.getItem('myStockDarkMode');
+                var dark = v === null ? window.matchMedia('(prefers-color-scheme: dark)').matches : v === 'true';
+                if (dark) document.documentElement.classList.add('dark');
+            } catch (e) {}
+        })();
+    </script>
+
+    <!-- Pretendard 폰트 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+    <!-- Tailwind / Lucide / Chart.js (버전 고정) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <script>
+        tailwind.config = { darkMode: 'class', corePlugins: { preflight: true } };
+    </script>
+
+    <style>
+        /* ───────── Design tokens ───────── */
+        :root {
+            --bg: #f3f4f8;
+            --card: #ffffff;
+            --inset: #f5f6fa;
+            --line: rgba(15, 23, 42, .08);
+            --text: #0f172a;
+            --sub: #5b6577;
+            --mute: #94a0b4;
+            --accent: #3b6cf6;
+            --accent-soft: rgba(59, 108, 246, .10);
+            --up: #e5484d;
+            --down: #2f6fed;
+            --amber: #c2710c;
+            --amber-soft: rgba(245, 158, 11, .13);
+            --shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 10px 30px -14px rgba(15, 23, 42, .12);
+            --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
+        }
+        .dark {
+            --bg: #080a10;
+            --card: #11141c;
+            --inset: #171b25;
+            --line: rgba(255, 255, 255, .07);
+            --text: #eceff6;
+            --sub: #9aa4b8;
+            --mute: #667085;
+            --accent: #7397ff;
+            --accent-soft: rgba(115, 151, 255, .15);
+            --up: #ff6b70;
+            --down: #6ea3ff;
+            --amber: #fbbf24;
+            --amber-soft: rgba(251, 191, 36, .12);
+            --shadow: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 14px 34px -18px rgba(0, 0, 0, .7);
+        }
+
+        /* ───────── Base ───────── */
+        html { color-scheme: light; }
+        html.dark { color-scheme: dark; }
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            font-variant-numeric: tabular-nums;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-font-smoothing: antialiased;
+            padding: 0 16px env(safe-area-inset-bottom);
+            min-height: 100vh;
+            transition: background-color .3s, color .3s;
+        }
+        body.scroll-locked { overflow: hidden; }
+        .hidden { display: none !important; }
+        button { cursor: pointer; font-family: inherit; }
+        button:disabled { opacity: .55; cursor: not-allowed; }
+        .prevent-scroll-chain { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+        :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+        .pos { color: var(--up); }
+        .neg { color: var(--down); }
+        .flat { color: var(--text); }
+
+        /* ───────── Header ───────── */
+        .app-header {
+            position: sticky; top: 0; z-index: 40;
+            margin: 0 -16px 12px; padding: calc(env(safe-area-inset-top) + 12px) 16px 10px;
+            background: color-mix(in srgb, var(--bg) 80%, transparent);
+            backdrop-filter: saturate(1.6) blur(14px); -webkit-backdrop-filter: saturate(1.6) blur(14px);
+        }
+        .logo-tile {
+            width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; color: #fff;
+            background: linear-gradient(135deg, #2b45b8, #4f7cff); box-shadow: 0 6px 14px -6px rgba(59, 108, 246, .7);
+        }
+        .icon-btn {
+            width: 36px; height: 36px; border-radius: 12px; display: inline-grid; place-items: center;
+            background: var(--card); border: 1px solid var(--line); color: var(--sub);
+            transition: background-color .15s, color .15s, transform .1s;
+        }
+        .icon-btn:hover { color: var(--text); background: var(--inset); }
+        .icon-btn:active { transform: scale(.94); }
+        .dark .icon-sun, html:not(.dark) .icon-moon { display: none; }
+
+        .menu {
+            position: absolute; right: 0; top: calc(100% + 8px); min-width: 220px; padding: 6px; z-index: 60;
+            background: var(--card); border: 1px solid var(--line); border-radius: 18px;
+            box-shadow: 0 20px 44px -16px rgba(0, 0, 0, .35); animation: pop .16s ease-out;
+        }
+        .menu button {
+            width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px;
+            font-size: 13px; font-weight: 600; color: var(--text); background: transparent; border: 0; text-align: left;
+        }
+        .menu button:hover { background: var(--inset); }
+        .menu button svg { color: var(--sub); }
+        .menu hr { border: 0; border-top: 1px solid var(--line); margin: 4px 6px; }
+
+        /* ───────── Cards ───────── */
+        .card {
+            background: var(--card); border: 1px solid var(--line); border-radius: 24px;
+            padding: 20px; box-shadow: var(--shadow); width: 100%; min-width: 0;
+        }
+        .sec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .sec-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+        .sec-icon { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; flex-shrink: 0; }
+        .sec-title { font-size: 14px; font-weight: 700; letter-spacing: -.01em; line-height: 1.2; }
+        .sec-sub { font-size: 11px; color: var(--mute); font-weight: 500; margin-top: 2px; }
+        .tone-blue { background: var(--accent-soft); color: var(--accent); }
+        .tone-amber { background: var(--amber-soft); color: var(--amber); }
+        .tone-rose { background: rgba(244, 63, 94, .12); color: #f43f5e; }
+        .tone-green { background: rgba(16, 185, 129, .13); color: #10b981; }
+        .tone-indigo { background: rgba(99, 102, 241, .13); color: #6366f1; }
+        .tone-purple { background: rgba(168, 85, 247, .13); color: #a855f7; }
+
+        .btn-round {
+            width: 36px; height: 36px; border-radius: 12px; display: inline-grid; place-items: center; border: 0;
+            background: var(--accent); color: #fff; transition: filter .15s, transform .1s;
+        }
+        .btn-round:hover { filter: brightness(1.08); }
+        .btn-round:active { transform: scale(.94); }
+        .btn-round.soft { background: var(--inset); color: var(--sub); border: 1px solid var(--line); }
+        .btn-round.amber { background: var(--amber-soft); color: var(--amber); }
+        .btn-round.rose { background: #f43f5e; }
+        #priceUpdateBtn.loading svg { animation: spin 1s linear infinite; }
+
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: 14px;
+            font-size: 13px; font-weight: 700; padding: 12px 16px; border: 0; transition: filter .15s, transform .1s;
+        }
+        .btn:active { transform: scale(.98); }
+        .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 8px 18px -10px var(--accent); }
+        .btn-primary:hover { filter: brightness(1.07); }
+        .btn-rose { background: #f43f5e; color: #fff; }
+        .btn-amber { background: #f59e0b; color: #fff; }
+        .btn-ghost { background: var(--inset); color: var(--sub); }
+        .btn-danger { background: rgba(239, 68, 68, .12); color: #ef4444; }
+        .btn-dashed { border: 1.5px dashed var(--line); background: transparent; color: var(--accent); width: 100%; }
+        .btn-dashed:hover { background: var(--accent-soft); }
+
+        /* ───────── Hero ───────── */
+        .hero {
+            position: relative; overflow: hidden; border-radius: 28px; padding: 22px; color: #1a1d23;
+            background: linear-gradient(140deg, #eceef2 0%, #e2e5ea 100%); border: 1px solid #d5d9e0;
+            box-shadow: 0 18px 36px -24px rgba(20, 22, 28, .35);
+        }
+        .hero::before {
+            content: ""; position: absolute; width: 260px; height: 260px; right: -80px; top: -110px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, .7), transparent 68%);
+        }
+        .hero::after {
+            content: ""; position: absolute; width: 200px; height: 200px; left: -70px; bottom: -120px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, .5), transparent 70%);
+        }
+        .hero > * { position: relative; z-index: 1; }
+        .hero .pos { color: #e5303a; }
+        .hero .neg { color: #2f6fed; }
+        .hero .flat { color: #1a1d23; }
+        .hero-eyebrow { font-size: 12px; font-weight: 600; color: rgba(26, 29, 35, .62); display: flex; align-items: center; gap: 6px; }
+        .hero-num { font-size: 34px; font-weight: 800; letter-spacing: -.03em; line-height: 1.1; }
+        .hero-sub { font-size: 12px; color: rgba(26, 29, 35, .55); margin-top: 4px; font-weight: 500; }
+        .hero-main { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin-top: 10px; }
+        .hero-pill {
+            font-size: 13px; font-weight: 800; padding: 5px 10px; border-radius: 999px;
+            background: rgba(255, 255, 255, .75); border: 1px solid rgba(26, 29, 35, .08);
+        }
+        .hero-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 18px; }
+        .hero-cell { background: rgba(255, 255, 255, .6); border: 1px solid rgba(26, 29, 35, .07); border-radius: 16px; padding: 10px 11px; min-width: 0; }
+        .hero-cell p { font-size: 10.5px; color: rgba(26, 29, 35, .55); font-weight: 600; margin-bottom: 4px; white-space: nowrap; }
+        .hero-cell b { font-size: 13px; font-weight: 800; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .hero-total {
+            margin-top: 8px; display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 14px; border-radius: 16px; background: rgba(255, 255, 255, .6); border: 1px solid rgba(26, 29, 35, .07);
+        }
+        .hero-total span { font-size: 12px; font-weight: 600; color: rgba(26, 29, 35, .7); }
+        .hero-total b { font-size: 16px; font-weight: 800; }
+
+        /* ───────── Memo ───────── */
+        .note {
+            padding: 14px 16px; border-radius: 18px; font-size: 13px; font-weight: 500; line-height: 1.6; white-space: pre-line;
+            background: var(--amber-soft); color: var(--text); border: 1px solid color-mix(in srgb, var(--amber) 22%, transparent);
+            display: flex; gap: 10px; align-items: flex-start;
+        }
+        .note svg { color: var(--amber); flex-shrink: 0; margin-top: 3px; }
+        .empty { text-align: center; font-size: 12.5px; color: var(--mute); padding: 22px 0; font-weight: 500; }
+
+        /* ───────── Stock cards ───────── */
+        .stock-card { background: var(--inset); border: 1px solid var(--line); border-radius: 20px; padding: 16px; }
+        .stock-name { font-size: 15px; font-weight: 800; letter-spacing: -.02em; }
+        .stock-meta { font-size: 11px; color: var(--mute); font-weight: 600; margin-top: 3px; }
+        .stock-eval { font-size: 15px; font-weight: 800; letter-spacing: -.02em; }
+        .badge { display: inline-block; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 8px; margin-top: 5px; }
+        .badge.pos { background: color-mix(in srgb, var(--up) 13%, transparent); }
+        .badge.neg { background: color-mix(in srgb, var(--down) 13%, transparent); }
+        .badge.flat { background: var(--line); color: var(--sub); }
+        .kv { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; padding: 12px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+        .kv p { font-size: 10.5px; color: var(--mute); font-weight: 600; margin-bottom: 3px; }
+        .kv b { font-size: 12px; font-weight: 700; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .acct {
+            width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; text-align: left;
+            padding: 10px 12px; border-radius: 14px; background: var(--card); border: 1px solid var(--line); transition: border-color .15s;
+        }
+        .acct:hover { border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+        .chip { font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 8px; background: var(--inset); color: var(--sub); }
+
+        /* ───────── Legend ───────── */
+        .legend-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; }
+        .legend-row + .legend-row { border-top: 1px solid var(--line); }
+        .dot { width: 10px; height: 10px; border-radius: 4px; flex-shrink: 0; }
+        .bar { height: 5px; border-radius: 99px; background: var(--inset); overflow: hidden; margin-top: 6px; }
+        .bar i { display: block; height: 100%; border-radius: 99px; }
+
+        /* ───────── Forms ───────── */
+        .field {
+            width: 100%; background: var(--inset); color: var(--text); border: 1.5px solid transparent; border-radius: 14px;
+            padding: 12px 14px; font-size: 14px; font-weight: 500; font-family: inherit; transition: border-color .15s, background-color .15s;
+        }
+        .field::placeholder { color: var(--mute); }
+        .field:focus { outline: none; border-color: var(--accent); background: var(--card); }
+        .label { display: block; font-size: 12px; font-weight: 700; color: var(--sub); margin-bottom: 6px; }
+        .cell-input {
+            width: 100%; background: var(--inset); color: var(--text); border: 1px solid var(--line); border-radius: 10px;
+            padding: 7px 8px; font-size: 12px; font-family: inherit;
+        }
+        .cell-input:focus { outline: none; border-color: var(--accent); }
+        .th { font-size: 11px; color: var(--mute); font-weight: 600; padding-bottom: 6px; }
+
+        /* ───────── Modal ───────── */
+        .modal {
+            position: fixed; inset: 0; z-index: 110; display: flex; align-items: flex-end; justify-content: center;
+            background: rgba(6, 8, 14, .55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+            animation: fade .2s ease-out;
+        }
+        @media (min-width: 640px) { .modal { align-items: center; padding: 16px; } }
+        .sheet {
+            background: var(--card); border: 1px solid var(--line); width: 100%; max-width: 440px; max-height: 90vh;
+            display: flex; flex-direction: column; border-radius: 28px 28px 0 0; padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+            box-shadow: 0 30px 70px -20px rgba(0, 0, 0, .5); animation: sheetUp .3s cubic-bezier(.2, .8, .2, 1);
+        }
+        @media (min-width: 640px) { .sheet { border-radius: 28px; padding-bottom: 20px; } }
+        .sheet-head { display: flex; align-items: center; justify-content: space-between; padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid var(--line); }
+        .sheet-head h4 { font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 8px; letter-spacing: -.01em; }
+        .grab { width: 38px; height: 4px; border-radius: 99px; background: var(--line); margin: -8px auto 12px; }
+        @media (min-width: 640px) { .grab { display: none; } }
+        .fullscreen { position: fixed; inset: 0; z-index: 110; background: var(--bg); display: flex; flex-direction: column; animation: fade .2s; }
+
+        /* ───────── Section controls (접기 / 순서 변경) ───────── */
+        .sec-ctrl { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .sec-actions { display: flex; align-items: center; gap: 6px; }
+        .sec-move { display: none; align-items: center; gap: 6px; }
+        .mini-btn {
+            width: 32px; height: 32px; border-radius: 10px; display: inline-grid; place-items: center; flex-shrink: 0;
+            background: var(--inset); border: 1px solid var(--line); color: var(--sub); transition: color .15s, transform .1s, opacity .15s;
+        }
+        .mini-btn:hover { color: var(--text); }
+        .mini-btn:active { transform: scale(.92); }
+        .mini-btn:disabled { opacity: .3; cursor: default; }
+        .chev { transition: transform .2s; }
+        [data-sec].collapsed .chev { transform: rotate(-90deg); }
+        [data-sec].collapsed > .sec-body { display: none !important; }
+        .hero .mini-btn { background: rgba(255, 255, 255, .7); border-color: rgba(26, 29, 35, .1); color: #1a1d23; }
+
+        /* 다크모드: 히어로 카드는 어두운 그래파이트 */
+        .dark .hero { color: #fff; background: linear-gradient(140deg, #16181d 0%, #2a2f38 60%, #444b57 115%); border-color: transparent; }
+        .dark .hero .pos { color: #ff5a5f; } .dark .hero .neg { color: #a9c9ff; } .dark .hero .flat { color: #fff; }
+        .dark .hero-eyebrow { color: rgba(255,255,255,.72); } .dark .hero-sub { color: rgba(255,255,255,.6); }
+        .dark .hero-pill { background: rgba(255,255,255,.14); border-color: rgba(255,255,255,.12); }
+        .dark .hero-cell { background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.08); }
+        .dark .hero-cell p { color: rgba(255,255,255,.62); }
+        .dark .hero-total { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.10); }
+        .dark .hero-total span { color: rgba(255,255,255,.75); }
+        .dark .hero .mini-btn { background: rgba(255,255,255,.14); border-color: rgba(255,255,255,.12); color: #fff; }
+        .dark .hero::before { background: radial-gradient(circle, rgba(255,255,255,.22), transparent 68%); }
+        .reorder-mode .sec-move { display: flex; }
+        .reorder-mode .sec-actions { display: none !important; }
+        .reorder-mode [data-sec] > .sec-body { display: none !important; }
+        .reorder-mode [data-sec] { outline: 2px dashed color-mix(in srgb, var(--accent) 50%, transparent); outline-offset: -2px; }
+        .reorder-bar {
+            position: sticky; top: 66px; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            margin-bottom: 12px; padding: 10px 12px 10px 16px; border-radius: 16px; font-size: 12px; font-weight: 700;
+            background: var(--card); border: 1px solid var(--accent); box-shadow: var(--shadow);
+        }
+        .reorder-bar .btn { padding: 8px 12px; font-size: 12px; white-space: nowrap; }
+        .reorder-bar span { line-height: 1.4; }
+
+        /* ───────── Toast / Auth ───────── */
+        #toastContainer { position: fixed; top: calc(env(safe-area-inset-top) + 14px); left: 0; right: 0; z-index: 300; display: flex; justify-content: center; pointer-events: none; }
+        .toast {
+            display: flex; align-items: center; gap: 8px; padding: 11px 16px; border-radius: 16px; font-size: 13px; font-weight: 700;
+            background: rgba(15, 23, 42, .92); color: #fff; backdrop-filter: blur(10px); box-shadow: 0 16px 36px -14px rgba(0, 0, 0, .6);
+            max-width: calc(100vw - 32px);
+        }
+        .toast.success svg { color: #34d399; } .toast.error svg { color: #fb7185; } .toast.info svg { color: #7db1ff; }
+        .toast-animate { animation: toastIn 3s ease-in-out forwards; }
+
+        #authOverlay { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 16px; background: radial-gradient(120% 90% at 50% 0%, #22307a 0%, #0a0d1a 60%); }
+        .auth-card { width: 100%; max-width: 360px; text-align: center; padding: 28px 24px; border-radius: 28px; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .12); backdrop-filter: blur(18px); color: #fff; }
+        .auth-card .field { text-align: center; letter-spacing: .4em; background: rgba(255, 255, 255, .08); color: #fff; font-weight: 700; }
+        .auth-card .field:focus { background: rgba(255, 255, 255, .12); border-color: #7397ff; }
+        .shake { animation: shake .35s; }
+
+        /* ───────── Animations ───────── */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes pop { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: none; } }
+        @keyframes sheetUp { from { transform: translateY(40px); opacity: .4; } to { transform: none; opacity: 1; } }
+        @keyframes toastIn { 0% { opacity: 0; transform: translateY(-16px); } 8% { opacity: 1; transform: none; } 90% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-16px); } }
+        @keyframes shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+        @media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+    </style>
+</head>
+<body>
+
+    <!-- 토스트 -->
+    <div id="toastContainer" class="hidden" role="status" aria-live="polite">
+        <div class="toast info" id="toastMessage"><span id="toastIcon"></span><span id="toastText"></span></div>
+    </div>
+
+    <!-- 비밀번호 인증 -->
+    <div id="authOverlay">
+        <div class="auth-card" id="authCard">
+            <div class="logo-tile" style="width:52px;height:52px;border-radius:18px;margin:0 auto 16px"><i data-lucide="lock" class="w-6 h-6"></i></div>
+            <h3 style="font-size:18px;font-weight:800;letter-spacing:-.02em">잠긴 페이지입니다</h3>
+            <p style="font-size:12.5px;color:rgba(255,255,255,.6);margin-top:6px">접속 비밀번호를 입력해주세요</p>
+            <form onsubmit="handleInitialAuth(event)" style="margin-top:20px;display:flex;flex-direction:column;gap:12px" autocomplete="off">
+                <input type="password" id="initialAuthPassword" inputmode="numeric" placeholder="••••" autocomplete="off" class="field">
+                <p id="authErrorMsg" class="hidden" style="font-size:12px;color:#fb7185;font-weight:600">비밀번호가 올바르지 않습니다.</p>
+                <button type="submit" class="btn btn-primary" style="width:100%">입장하기</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 메인 -->
+    <div id="mainContainer" class="max-w-[480px] w-full mx-auto pb-12 transition-all duration-300">
+
+        <header class="app-header">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="logo-tile"><i data-lucide="trending-up" class="w-[18px] h-[18px]"></i></div>
+                    <h1 style="font-size:19px;font-weight:800;letter-spacing:-.03em">주식 자산</h1>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <button id="maskToggleBtn" onclick="toggleMask()" class="icon-btn" title="금액 숨기기/보이기" aria-label="금액 숨기기/보이기"><span id="maskIconWrap"><i data-lucide="eye" class="w-4 h-4"></i></span></button>
+                    <button onclick="toggleDarkMode()" class="icon-btn" title="다크모드" aria-label="다크모드">
+                        <i data-lucide="moon" class="w-4 h-4 icon-moon"></i><i data-lucide="sun" class="w-4 h-4 icon-sun"></i>
+                    </button>
+                    <button onclick="openApiSettingsModal()" class="icon-btn" title="설정" aria-label="설정"><i data-lucide="settings" class="w-4 h-4"></i></button>
+                    <div class="relative" id="menuWrap">
+                        <button id="menuBtn" onclick="toggleMenu()" class="icon-btn" title="더보기" aria-label="더보기" aria-haspopup="true"><i data-lucide="ellipsis" class="w-4 h-4"></i></button>
+                        <div id="moreMenu" class="menu hidden" role="menu">
+                            <button onclick="closeMenu(); pullFromCloud()" role="menuitem"><i data-lucide="cloud-download" class="w-4 h-4"></i>클라우드에서 불러오기</button>
+                            <button onclick="closeMenu(); pushToCloud()" role="menuitem"><i data-lucide="cloud-upload" class="w-4 h-4"></i>클라우드에 저장하기</button>
+                            <hr>
+                            <button onclick="closeMenu(); exportBackup()" role="menuitem"><i data-lucide="download" class="w-4 h-4"></i>백업 파일 저장</button>
+                            <button onclick="closeMenu(); document.getElementById('restoreFileInput').click()" role="menuitem"><i data-lucide="upload" class="w-4 h-4"></i>백업 파일 복원</button>
+                            <hr>
+                            <button onclick="closeMenu(); toggleViewMode()" role="menuitem"><span id="viewModeIconWrap"><i data-lucide="monitor" class="w-4 h-4"></i></span><span id="viewModeLabel">PC 화면으로 보기</span></button>
+                            <button onclick="closeMenu(); toggleReorderMode()" role="menuitem"><i data-lucide="arrow-up-down" class="w-4 h-4"></i><span>섹션 순서 편집</span></button>
+                        </div>
+                    </div>
+                    <input type="file" id="restoreFileInput" accept="application/json,.json" class="hidden" onchange="importBackup(event)">
+                </div>
+            </div>
+        </header>
+
+        <div id="reorderBar" class="reorder-bar hidden">
+            <span>▲▼ 버튼으로 순서 변경</span>
+            <div class="flex gap-2"><button type="button" class="btn btn-ghost" onclick="resetLayoutOrder()">초기화</button><button type="button" class="btn btn-primary" onclick="toggleReorderMode()">완료</button></div>
+        </div>
+
+        <div id="cardWrapper" class="flex flex-col gap-4">
+
+            <!-- 총 자산 (Hero) -->
+            <section class="hero md:col-span-1 xl:col-span-2" data-sec="hero">
+                <div class="flex items-center justify-between gap-3">
+                    <span class="hero-eyebrow"><i data-lucide="wallet" class="w-3.5 h-3.5"></i>총 평가금액</span>
+                    <div class="sec-ctrl">
+                        <div class="sec-move">
+                            <button type="button" data-move="up" class="mini-btn" onclick="moveSection('hero', -1)" aria-label="위로 이동" title="위로"><i data-lucide="arrow-up" class="w-4 h-4"></i></button>
+                            <button type="button" data-move="down" class="mini-btn" onclick="moveSection('hero', 1)" aria-label="아래로 이동" title="아래로"><i data-lucide="arrow-down" class="w-4 h-4"></i></button>
+                        </div>
+                        <button type="button" data-toggle class="mini-btn" onclick="toggleSection('hero')" aria-label="접기/펼치기" aria-expanded="true" title="접기/펼치기"><i data-lucide="chevron-down" class="w-4 h-4 chev"></i></button>
+                    </div>
+                </div>
+                <div class="hero-main">
+                    <div id="total-eval-text" class="hero-num">-</div>
+                    <span id="total-rate-text" class="hero-pill flat">-</span>
+                </div>
+                <div id="total-eval-sub" class="hero-sub">&nbsp;</div>
+                <div class="sec-body">
+                    <div class="hero-grid">
+                        <div class="hero-cell"><p>총 매입금액</p><b id="total-purchase-text">0억</b></div>
+                        <div class="hero-cell"><p>실시간 손익</p><b id="realtime-pnl-text">0억</b></div>
+                        <div class="hero-cell"><p>올해 확정손익</p><b id="realized-pnl-text">0억</b></div>
+                    </div>
+                    <div class="hero-total"><span>총 손익 (실시간+확정)</span><b id="total-pnl-text">0억</b></div>
+                </div>
+            </section>
+
+            <!-- 메모 -->
+            <section class="card flex flex-col gap-3 md:col-span-1" data-sec="memo">
+                <div class="sec-head">
+                    <div class="sec-left"><span class="sec-icon tone-amber"><i data-lucide="notebook-pen" class="w-4 h-4"></i></span><span class="sec-title">메모</span></div>
+                    <div class="sec-ctrl">
+                        <div class="sec-actions">
+                            <button onclick="openNewMemoEditor()" title="새 메모" aria-label="새 메모" class="btn-round" style="background:#f59e0b"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                            <button onclick="openMemoViewModal()" title="메모 전체 보기" aria-label="메모 전체 보기" class="btn-round amber"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                        </div>
+                        <div class="sec-move">
+                            <button type="button" data-move="up" class="mini-btn" onclick="moveSection('memo', -1)" aria-label="위로 이동" title="위로"><i data-lucide="arrow-up" class="w-4 h-4"></i></button>
+                            <button type="button" data-move="down" class="mini-btn" onclick="moveSection('memo', 1)" aria-label="아래로 이동" title="아래로"><i data-lucide="arrow-down" class="w-4 h-4"></i></button>
+                        </div>
+                        <button type="button" data-toggle class="mini-btn" onclick="toggleSection('memo')" aria-label="접기/펼치기" aria-expanded="true" title="접기/펼치기"><i data-lucide="chevron-down" class="w-4 h-4 chev"></i></button>
+                    </div>
+                </div>
+                <div class="sec-body"><div id="mainPinnedMemoContainer"></div></div>
+            </section>
+
+            <!-- 종목별 평가 현황 -->
+            <section class="card flex flex-col gap-4 md:col-span-2 xl:col-span-3" data-sec="stocks">
+                <div class="sec-head">
+                    <div class="sec-left">
+                        <span class="sec-icon tone-rose"><i data-lucide="activity" class="w-4 h-4"></i></span>
+                        <div><div class="sec-title">종목별 평가 현황</div><div id="last-price-update-time" class="sec-sub">현재가 기준 -</div></div>
+                    </div>
+                    <div class="sec-ctrl">
+                        <div class="sec-actions">
+                            <button id="priceUpdateBtn" onclick="updateAllStockPrices()" title="현재가 업데이트" aria-label="현재가 업데이트" class="btn-round soft"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+                            <button onclick="openLiveStockModal()" title="종목 추가" aria-label="종목 추가" class="btn-round rose"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                        </div>
+                        <div class="sec-move">
+                            <button type="button" data-move="up" class="mini-btn" onclick="moveSection('stocks', -1)" aria-label="위로 이동" title="위로"><i data-lucide="arrow-up" class="w-4 h-4"></i></button>
+                            <button type="button" data-move="down" class="mini-btn" onclick="moveSection('stocks', 1)" aria-label="아래로 이동" title="아래로"><i data-lucide="arrow-down" class="w-4 h-4"></i></button>
+                        </div>
+                        <button type="button" data-toggle class="mini-btn" onclick="toggleSection('stocks')" aria-label="접기/펼치기" aria-expanded="true" title="접기/펼치기"><i data-lucide="chevron-down" class="w-4 h-4 chev"></i></button>
+                    </div>
+                </div>
+                <div class="sec-body"><div id="live-stock-container" class="flex flex-col gap-3"></div></div>
+            </section>
+
+            <!-- 매입 금액 현황 -->
+            <section class="card flex flex-col gap-4 md:col-span-1" data-sec="pie">
+                <div class="sec-head">
+                    <div class="sec-left"><span class="sec-icon tone-green"><i data-lucide="chart-pie" class="w-4 h-4"></i></span><span class="sec-title">매입 금액 현황</span></div>
+                    <div class="sec-ctrl">
+                        <div class="sec-move">
+                            <button type="button" data-move="up" class="mini-btn" onclick="moveSection('pie', -1)" aria-label="위로 이동" title="위로"><i data-lucide="arrow-up" class="w-4 h-4"></i></button>
+                            <button type="button" data-move="down" class="mini-btn" onclick="moveSection('pie', 1)" aria-label="아래로 이동" title="아래로"><i data-lucide="arrow-down" class="w-4 h-4"></i></button>
+                        </div>
+                        <button type="button" data-toggle class="mini-btn" onclick="toggleSection('pie')" aria-label="접기/펼치기" aria-expanded="true" title="접기/펼치기"><i data-lucide="chevron-down" class="w-4 h-4 chev"></i></button>
+                    </div>
+                </div>
+                <div class="sec-body flex flex-col gap-4">
+                    <div class="relative w-full h-[340px] flex justify-center"><canvas id="stockPieChart" aria-label="종목별 매입 비중 원형 차트" role="img"></canvas></div>
+                    <div id="stock-summary-body"></div>
+                </div>
+            </section>
+
+            <!-- 트렌드 -->
+            <section class="card flex flex-col gap-4 md:col-span-2 xl:col-span-2" data-sec="trend">
+                <div class="sec-head">
+                    <div class="sec-left">
+                        <span class="sec-icon tone-indigo"><i data-lucide="chart-column" class="w-4 h-4"></i></span>
+                        <div><div class="sec-title">주식 평가금 트렌드</div></div>
+                    </div>
+                    <div class="sec-ctrl">
+                        <div class="sec-actions">
+                            <button id="trendEditToggleBtn" onclick="openTrendModal()" title="편집" aria-label="트렌드 편집" class="btn-round"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                        </div>
+                        <div class="sec-move">
+                            <button type="button" data-move="up" class="mini-btn" onclick="moveSection('trend', -1)" aria-label="위로 이동" title="위로"><i data-lucide="arrow-up" class="w-4 h-4"></i></button>
+                            <button type="button" data-move="down" class="mini-btn" onclick="moveSection('trend', 1)" aria-label="아래로 이동" title="아래로"><i data-lucide="arrow-down" class="w-4 h-4"></i></button>
+                        </div>
+                        <button type="button" data-toggle class="mini-btn" onclick="toggleSection('trend')" aria-label="접기/펼치기" aria-expanded="true" title="접기/펼치기"><i data-lucide="chevron-down" class="w-4 h-4 chev"></i></button>
+                    </div>
+                </div>
+                <div class="sec-body flex flex-col gap-4">
+                    <div id="trendChartWrap" class="relative w-full" style="height:240px"><canvas id="trendBarChart" aria-label="평가금 추이 막대 차트" role="img"></canvas></div>
+                    <div id="trend-empty" class="empty hidden">트렌드 데이터가 없습니다. 연필 버튼으로 추가해보세요.</div>
+                </div>
+            </section>
+
+            <!-- 누적 확정 손익 -->
+            <section class="card flex flex-col gap-4 md:col-span-2 xl:col-span-3" data-sec="pnl">
+                <div class="sec-head">
+                    <div class="sec-left">
+                        <span class="sec-icon tone-purple"><i data-lucide="badge-dollar-sign" class="w-4 h-4"></i></span>
+                        <div><div class="sec-title">누적 확정 손익 (20년~현재)</div></div>
+                    </div>
+                    <div class="sec-ctrl">
+                        <div class="sec-actions">
+                            <button id="pnlEditToggleBtn" onclick="togglePnlEditMode()" title="편집" aria-label="확정 손익 편집" class="btn-round"><span id="pnlEditIconWrap"><i data-lucide="pencil" class="w-4 h-4"></i></span></button>
+                        </div>
+                        <div class="sec-move">
+                            <button type="button" data-move="up" class="mini-btn" onclick="moveSection('pnl', -1)" aria-label="위로 이동" title="위로"><i data-lucide="arrow-up" class="w-4 h-4"></i></button>
+                            <button type="button" data-move="down" class="mini-btn" onclick="moveSection('pnl', 1)" aria-label="아래로 이동" title="아래로"><i data-lucide="arrow-down" class="w-4 h-4"></i></button>
+                        </div>
+                        <button type="button" data-toggle class="mini-btn" onclick="toggleSection('pnl')" aria-label="접기/펼치기" aria-expanded="true" title="접기/펼치기"><i data-lucide="chevron-down" class="w-4 h-4 chev"></i></button>
+                    </div>
+                </div>
+                <div class="sec-body flex flex-col gap-4">
+                    <div class="flex justify-between items-center" style="background:var(--inset);border-radius:16px;padding:14px 16px">
+                        <span style="font-size:12.5px;font-weight:600;color:var(--sub)">전체 확정 손익 합계</span>
+                        <div style="font-size:18px;font-weight:800;letter-spacing:-.02em"><span id="pnl-grand-total" class="flat">0</span> <span style="font-size:12px;font-weight:700;color:var(--mute)">원</span></div>
+                    </div>
+                    <div id="pnlEditContainer" class="hidden flex flex-col gap-2" style="overflow-x:auto">
+                        <table class="w-full text-left" style="font-size:12px;min-width:300px">
+                            <thead><tr><th class="th">연도</th><th class="th">계좌명</th><th class="th text-right">확정손익 (원)</th><th class="th text-center" style="width:36px"></th></tr></thead>
+                            <tbody id="pnl-edit-tbody"></tbody>
+                        </table>
+                        <button type="button" onclick="addPnlRow()" class="btn btn-dashed"><i data-lucide="plus" class="w-4 h-4"></i>내역 추가</button>
+                    </div>
+                    <div id="pnlChartWrap" class="relative w-full" style="height:240px"><canvas id="pnlBarChart" aria-label="연도별 확정 손익 막대 차트" role="img"></canvas></div>
+                    <div id="pnl-empty" class="empty hidden">확정 손익 내역이 없습니다.</div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- 설정 모달 -->
+    <div id="apiSettingsModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="앱 환경설정">
+        <div class="sheet">
+            <div class="grab"></div>
+            <div class="sheet-head">
+                <h4><i data-lucide="settings" class="w-4 h-4" style="color:var(--accent)"></i>앱 환경설정</h4>
+                <button onclick="closeApiSettingsModal()" class="icon-btn" aria-label="닫기"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <div class="prevent-scroll-chain flex flex-col gap-5" style="overflow-y:auto;flex:1">
+                <div class="flex flex-col gap-3">
+                    <div class="flex items-center gap-2"><i data-lucide="cloud" class="w-4 h-4" style="color:#6366f1"></i><h5 style="font-size:12px;font-weight:800;letter-spacing:.02em">클라우드 동기화 (GitHub Gist)</h5></div>
+                    <div>
+                        <label class="label" for="cloud-token">GitHub Token</label>
+                        <div class="relative flex items-center">
+                            <input type="password" id="cloud-token" placeholder="ghp_로 시작하는 토큰" class="field" style="padding-right:42px" autocomplete="off">
+                            <button type="button" onclick="togglePasswordVisibility('cloud-token', 'cloudTokenIcon')" class="absolute right-3" style="color:var(--mute);background:none;border:0" aria-label="표시 전환"><span id="cloudTokenIcon"><i data-lucide="eye" class="w-4 h-4"></i></span></button>
+                        </div>
+                    </div>
+                    <div><label class="label" for="cloud-gist-id">Gist ID</label><input type="text" id="cloud-gist-id" placeholder="Gist URL 끝 문자열" class="field" autocomplete="off"></div>
+                </div>
+                <hr style="border:0;border-top:1px solid var(--line)">
+                <div class="flex flex-col gap-3">
+                    <div class="flex items-center gap-2"><i data-lucide="key" class="w-4 h-4" style="color:#f43f5e"></i><h5 style="font-size:12px;font-weight:800;letter-spacing:.02em">현재가 연동</h5></div>
+                    <div>
+                        <label class="label" for="api-app-key">APP Key</label>
+                        <div class="relative flex items-center">
+                            <input type="password" id="api-app-key" placeholder="App Key 입력" class="field" style="padding-right:42px" autocomplete="off">
+                            <button type="button" onclick="togglePasswordVisibility('api-app-key', 'keyToggleIcon')" class="absolute right-3" style="color:var(--mute);background:none;border:0" aria-label="표시 전환"><span id="keyToggleIcon"><i data-lucide="eye" class="w-4 h-4"></i></span></button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="label" for="api-app-secret">APP Secret</label>
+                        <div class="relative flex items-center">
+                            <input type="password" id="api-app-secret" placeholder="App Secret 입력" class="field" style="padding-right:42px" autocomplete="off">
+                            <button type="button" onclick="togglePasswordVisibility('api-app-secret', 'secretToggleIcon')" class="absolute right-3" style="color:var(--mute);background:none;border:0" aria-label="표시 전환"><span id="secretToggleIcon"><i data-lucide="eye" class="w-4 h-4"></i></span></button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="label" for="api-update-interval">자동 업데이트 주기</label>
+                        <select id="api-update-interval" class="field">
+                            <option value="manual">수동 업데이트</option>
+                            <option value="10">10분</option>
+                            <option value="30">30분</option>
+                            <option value="60">1시간</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div style="padding-top:16px;margin-top:16px;border-top:1px solid var(--line)">
+                <button type="button" onclick="saveSettings()" class="btn btn-primary" style="width:100%">설정 저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 종목 모달 -->
+    <div id="liveStockModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="종목 상세 입력">
+        <div class="sheet">
+            <div class="grab"></div>
+            <div class="sheet-head">
+                <h4><i data-lucide="pen-line" class="w-4 h-4" style="color:#f43f5e"></i><span id="ls-modal-title">종목 상세 입력</span></h4>
+                <button onclick="closeLiveStockModal()" class="icon-btn" aria-label="닫기"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <div class="flex flex-col gap-3 prevent-scroll-chain" style="overflow-y:auto;flex:1;padding:2px">
+                <input type="hidden" id="ls-id">
+                <div><label class="label" for="ls-account">계좌명</label><input type="text" id="ls-account" placeholder="예: 나무 CMA" class="field"></div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="label" for="ls-stock">종목명</label><input type="text" id="ls-stock" placeholder="예: 삼성전자" class="field"></div>
+                    <div><label class="label" for="ls-code">종목코드 (6자리)</label><input type="text" inputmode="text" maxlength="6" id="ls-code" placeholder="예: 005930" class="field"></div>
+                </div>
+                <div><label class="label" for="ls-purchase">매입금액 (원)</label><input type="number" inputmode="numeric" id="ls-purchase" placeholder="비우면 평단가 × 수량으로 자동 계산" class="field text-right"></div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="label" for="ls-avg">평단가 (원)</label><input type="number" inputmode="numeric" id="ls-avg" placeholder="예: 75000" class="field text-right"></div>
+                    <div><label class="label" for="ls-qty">수량 (주)</label><input type="number" inputmode="numeric" id="ls-qty" placeholder="예: 400" class="field text-right"></div>
+                </div>
+            </div>
+            <div class="flex gap-2" style="padding-top:16px;margin-top:16px;border-top:1px solid var(--line)">
+                <button type="button" id="ls-delete-btn" onclick="deleteLiveStock()" class="btn btn-danger hidden">삭제</button>
+                <button type="button" onclick="saveLiveStock()" class="btn btn-rose" style="flex:1">저장하기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 트렌드 편집 모달 -->
+    <div id="trendDataModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="평가금 트렌드 편집">
+        <div class="sheet" style="max-width:480px">
+            <div class="grab"></div>
+            <div class="sheet-head">
+                <h4><i data-lucide="chart-column" class="w-4 h-4" style="color:#6366f1"></i>평가금 트렌드 편집</h4>
+                <button onclick="closeTrendModal()" class="icon-btn" aria-label="닫기"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <p style="font-size:11px;color:var(--mute);margin-bottom:12px">날짜 형식 예: 26.08.09 · 현재 총 평가금으로 추가하거나 표에서 직접 수정할 수 있어요.</p>
+            <div class="prevent-scroll-chain flex flex-col gap-3" style="overflow-y:auto;flex:1">
+                <div class="flex justify-between items-center gap-3" style="background:var(--inset);border-radius:16px;padding:12px 14px">
+                    <div style="min-width:0"><div style="font-size:11px;color:var(--mute);font-weight:600">오늘 날짜로 추가</div><div id="modal-auto-eval-preview" style="font-size:13px;font-weight:800;color:var(--accent);margin-top:2px">-</div></div>
+                    <button type="button" onclick="addTrendRowFromLive()" class="btn btn-primary" style="padding:9px 12px;font-size:12px;flex-shrink:0"><i data-lucide="plus" class="w-3.5 h-3.5"></i>현재 평가금 추가</button>
+                </div>
+                <table class="w-full text-left table-fixed" style="font-size:12px">
+                    <thead><tr><th class="th" style="width:96px">날짜</th><th class="th text-right">총 평가금액(원)</th><th class="th" style="width:36px"></th></tr></thead>
+                    <tbody id="trend-edit-tbody"></tbody>
+                </table>
+            </div>
+            <button type="button" onclick="closeTrendModal()" class="btn btn-primary" style="width:100%;margin-top:16px">완료</button>
+        </div>
+    </div>
+
+    <!-- 새 메모 모달 -->
+    <div id="newMemoModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="새 메모 작성">
+        <div class="sheet">
+            <div class="grab"></div>
+            <div class="sheet-head">
+                <h4><i data-lucide="notebook-pen" class="w-4 h-4" style="color:#f59e0b"></i>새 메모 작성</h4>
+                <button onclick="closeNewMemoEditor()" class="icon-btn" aria-label="닫기"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <textarea id="newMemoText" placeholder="내용 입력..." class="field" style="resize:vertical" rows="6"></textarea>
+            <button onclick="saveNewMemo()" class="btn btn-amber" style="width:100%;margin-top:14px">저장 (고정 메모로 등록)</button>
+        </div>
+    </div>
+
+    <!-- 메모 전체 보기 -->
+    <div id="memoViewModal" class="fullscreen hidden prevent-scroll-chain">
+        <div style="padding:calc(env(safe-area-inset-top) + 14px) 16px 14px;border-bottom:1px solid var(--line);background:var(--card)">
+            <div class="max-w-[480px] mx-auto flex justify-between items-center">
+                <h3 style="font-size:16px;font-weight:800;letter-spacing:-.02em">메모 히스토리</h3>
+                <button onclick="closeMemoViewModal()" class="icon-btn" aria-label="닫기"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:16px">
+            <div class="max-w-[480px] w-full mx-auto"><div id="memoListView" class="flex flex-col gap-3"></div></div>
+        </div>
+    </div>
+
+    <script>
+        /* ═════════════ 유틸 ═════════════ */
+        const $ = (id) => document.getElementById(id);
+        const icons = () => { if (window.lucide) lucide.createIcons(); };
+        const LS = {
+            get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+            set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* 저장소 사용 불가 시 무시 */ } }
+        };
+        if (window.Chart && window.ChartDataLabels) Chart.register(ChartDataLabels);
+
+        function setIcon(wrapId, name, cls = 'w-4 h-4') {
+            const w = $(wrapId); if (!w) return;
+            w.innerHTML = `<i data-lucide="${name}" class="${cls}"></i>`;
+            icons();
+        }
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+        function chunkText(text, length) {
+            const r = []; for (let i = 0; i < text.length; i += length) r.push(text.substring(i, i + length)); return r.join('\n');
+        }
+
+        let toastTimer = null;
+        function showToast(message, type = 'info') {
+            const c = $('toastContainer'), m = $('toastMessage');
+            m.className = `toast ${type} toast-animate`;
+            $('toastText').textContent = message;
+            const name = type === 'success' ? 'circle-check' : type === 'error' ? 'triangle-alert' : 'info';
+            $('toastIcon').innerHTML = `<i data-lucide="${name}" class="w-4 h-4"></i>`;
+            icons();
+            c.classList.remove('hidden');
+            m.classList.remove('toast-animate'); void m.offsetWidth; m.classList.add('toast-animate');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => c.classList.add('hidden'), 3000);
+        }
+
+        /* ═════════════ 상태 ═════════════ */
+        let isMasked = false, isPnlEditMode = false, isTrendMemoEditMode = false, isPcMode = false, isUpdatingPrices = false;
+        let pieChart = null, trendChart = null, pnlChart = null;
+        let trendMemoText = `예) 3/6 : 자금 추가\n예) 5/31 : 주식보상 입고\n예) 6/25 : 추가 매수`;
+        let memoList = [], editingMemoId = null, liveStockDataList = [], lastPriceUpdateTime = '-';
+        // ⚠ 키/시크릿은 소스에 넣지 않고 설정 화면에서 입력 → 이 기기 localStorage에만 저장
+        let apiSettings = { appKey: '', appSecret: '', interval: '30' };
+        let cloudSettings = { token: '', gistId: '' };
+        let autoUpdateTimer = null;
+        let localUpdatedAt = 0;   // 마지막 로컬 수정 시각 (클라우드 덮어쓰기 방지용)
+        let trendRawData = [
+            { date: '26.02.08', amount: 388326139 },
+            { date: '26.03.06', amount: 527553375 },
+            { date: '26.03.20', amount: 540000000 }
+        ];
+        let pnlDataList = [];
+        const defaultInitialMemos = [{ id: 1, text: '여기에 고정 메모를 입력해보세요.', isPinned: true }];
+        const AUTH_PASSWORD = '0713';
+        const CHART_COLORS = ['#4f7cff', '#9b6bff', '#22c3a6', '#ffb020', '#ff7a59', '#36b3e8', '#d16ce0', '#7cc94f'];
+
+        /* 저장된 값이 깨져 있어도 앱이 죽지 않도록 숫자/문자 정규화 */
+        function normalizeState() {
+            const arr = (v) => Array.isArray(v) ? v.filter(x => x && typeof x === 'object') : [];
+            liveStockDataList = arr(liveStockDataList).map((x, i) => ({
+                id: Number(x.id) || (Date.now() + i), account: String(x.account ?? ''), stock: String(x.stock ?? ''),
+                code: String(x.code ?? '').trim(), purchaseAmount: Number(x.purchaseAmount) || 0,
+                averagePrice: Number(x.averagePrice) || 0, quantity: Number(x.quantity) || 0,
+                currentPrice: Number(x.currentPrice) > 0 ? Number(x.currentPrice) : null
+            }));
+            pnlDataList = arr(pnlDataList).map(x => ({ year: String(x.year ?? ''), account: String(x.account ?? ''), amount: Number(x.amount) || 0 }));
+            trendRawData = arr(trendRawData).map(x => ({ date: String(x.date ?? ''), amount: Number(x.amount) || 0 }));
+            memoList = arr(memoList).map((x, i) => ({ id: Number(x.id) || (Date.now() + i), text: String(x.text ?? ''), isPinned: !!x.isPinned }));
+        }
+
+        /* ═════════════ 포맷 ═════════════ */
+        const M = (s) => isMasked ? '••••••' : s;
+        const won = (n) => Number(n || 0).toLocaleString('ko-KR');
+        function fmtEok(amount) {
+            if (!amount) return '0.00억';
+            return (Math.trunc((amount / 1e8) * 100) / 100).toFixed(2) + '억';
+        }
+        function formatAmountBillion(amount, signed = false) {
+            if (isMasked) return '••••••';
+            const s = fmtEok(amount);
+            return signed && amount > 0 ? '+' + s : s;
+        }
+        const tone = (v) => v > 0 ? 'pos' : (v < 0 ? 'neg' : 'flat');
+        function setVal(el, text, cls) {
+            if (!el) return; el.textContent = text;
+            el.classList.remove('pos', 'neg', 'flat'); el.classList.add(cls);
+        }
+
+        /* ═════════════ 모달 / 메뉴 ═════════════ */
+        const modalClosers = {
+            apiSettingsModal: () => closeApiSettingsModal(), liveStockModal: () => closeLiveStockModal(),
+            trendDataModal: () => closeTrendModal(), newMemoModal: () => closeNewMemoEditor(), memoViewModal: () => closeMemoViewModal()
+        };
+        function openModal(id) { $(id).classList.remove('hidden'); document.body.classList.add('scroll-locked'); icons(); }
+        function closeModal(id) {
+            $(id).classList.add('hidden');
+            if (!document.querySelector('.modal:not(.hidden), .fullscreen:not(.hidden)')) document.body.classList.remove('scroll-locked');
+        }
+        document.addEventListener('click', (e) => {
+            if (e.target.classList && e.target.classList.contains('modal') && modalClosers[e.target.id]) modalClosers[e.target.id]();
+            if (!e.composedPath().some(el => el.id === 'menuWrap')) closeMenu();   // 아이콘 재렌더로 target이 사라져도 안전
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            closeMenu();
+            const open = [...document.querySelectorAll('.modal:not(.hidden), .fullscreen:not(.hidden)')].pop();
+            if (open && modalClosers[open.id]) modalClosers[open.id]();
+        });
+        function toggleMenu() { $('moreMenu').classList.toggle('hidden'); }
+        function closeMenu() { $('moreMenu').classList.add('hidden'); }
+
+        function togglePasswordVisibility(inputId, wrapId) {
+            const input = $(inputId); if (!input) return;
+            const show = input.type === 'password';
+            input.type = show ? 'text' : 'password';
+            setIcon(wrapId, show ? 'eye-off' : 'eye');
+        }
+
+        /* ═════════════ 섹션 접기 / 순서 변경 (상태 저장) ═════════════ */
+        const SECTION_IDS = ['hero', 'memo', 'stocks', 'pie', 'trend', 'pnl'];
+        let layoutState = { order: [...SECTION_IDS], collapsed: {} };
+        let isReorderMode = false;
+
+        function loadLayout() {
+            try {
+                const v = JSON.parse(LS.get('myStockLayout') || 'null');
+                if (v && Array.isArray(v.order)) {
+                    const o = v.order.filter((id, i, a) => SECTION_IDS.includes(id) && a.indexOf(id) === i);
+                    SECTION_IDS.forEach(id => { if (!o.includes(id)) o.push(id); });
+                    layoutState.order = o;
+                }
+                if (v && v.collapsed && typeof v.collapsed === 'object') layoutState.collapsed = v.collapsed;
+            } catch (e) { /* 저장값이 깨져 있으면 기본값 사용 */ }
+        }
+        function saveLayout() { LS.set('myStockLayout', JSON.stringify(layoutState)); }
+        function resizeCharts() { setTimeout(() => { [pieChart, trendChart, pnlChart].forEach(c => c && c.resize()); }, 60); }
+        function applyLayout() {
+            const wrap = $('cardWrapper');
+            layoutState.order.forEach(id => { const el = wrap.querySelector(`[data-sec="${id}"]`); if (el) wrap.appendChild(el); });
+            const all = [...wrap.querySelectorAll('[data-sec]')];
+            all.forEach((el, i) => {
+                const c = !!layoutState.collapsed[el.dataset.sec];
+                el.classList.toggle('collapsed', c);
+                const tg = el.querySelector('[data-toggle]'); if (tg) tg.setAttribute('aria-expanded', String(!c));
+                const up = el.querySelector('[data-move="up"]'), dn = el.querySelector('[data-move="down"]');
+                if (up) up.disabled = i === 0;
+                if (dn) dn.disabled = i === all.length - 1;
+            });
+        }
+        function toggleSection(id) {
+            layoutState.collapsed[id] = !layoutState.collapsed[id];
+            saveLayout(); applyLayout(); resizeCharts();
+        }
+        function moveSection(id, dir) {
+            const o = layoutState.order, i = o.indexOf(id), j = i + dir;
+            if (i < 0 || j < 0 || j >= o.length) return;
+            [o[i], o[j]] = [o[j], o[i]];
+            saveLayout(); applyLayout();
+            const el = document.querySelector(`[data-sec="${id}"]`); if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+        function resetLayoutOrder() { layoutState.order = [...SECTION_IDS]; saveLayout(); applyLayout(); showToast('섹션 순서를 초기화했습니다.', 'success'); }
+        function toggleReorderMode() {
+            isReorderMode = !isReorderMode;
+            $('cardWrapper').classList.toggle('reorder-mode', isReorderMode);
+            $('reorderBar').classList.toggle('hidden', !isReorderMode);
+            if (!isReorderMode) resizeCharts();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        /* ═════════════ 화면 모드 ═════════════ */
+        function toggleViewMode() { isPcMode = !isPcMode; LS.set('myStockPcMode', isPcMode); applyViewMode(); }
+        function applyViewMode() {
+            const container = $('mainContainer'), wrap = $('cardWrapper');
+            if (isPcMode) {
+                container.classList.remove('max-w-[480px]'); container.classList.add('max-w-[1440px]');
+                wrap.classList.remove('flex', 'flex-col');
+                wrap.classList.add('grid', 'grid-cols-1', 'md:grid-cols-2', 'xl:grid-cols-3', 'items-start');
+                wrap.style.gridAutoFlow = 'dense';
+            } else {
+                container.classList.remove('max-w-[1440px]'); container.classList.add('max-w-[480px]');
+                wrap.classList.remove('grid', 'grid-cols-1', 'md:grid-cols-2', 'xl:grid-cols-3', 'items-start');
+                wrap.classList.add('flex', 'flex-col'); wrap.style.gridAutoFlow = '';
+            }
+            setIcon('viewModeIconWrap', isPcMode ? 'smartphone' : 'monitor');
+            $('viewModeLabel').textContent = isPcMode ? '모바일 화면으로 보기' : 'PC 화면으로 보기';
+            renderLiveStocks();
+            setTimeout(() => { [pieChart, trendChart, pnlChart].forEach(c => c && c.resize()); }, 320);
+        }
+
+        /* ═════════════ 저장 / 로드 ═════════════ */
+        function saveAllDataToStorage(touch = true) {
+            if (touch) localUpdatedAt = Date.now();
+            LS.set('myStockDarkMode', document.documentElement.classList.contains('dark'));
+            LS.set('myStockTrendRawData', JSON.stringify(trendRawData));
+            LS.set('myStockPnlDataList', JSON.stringify(pnlDataList));
+            LS.set('myStockMemoList', JSON.stringify(memoList));
+            LS.set('myStockTrendMemoText', trendMemoText);
+            LS.set('myStockLiveStockDataList', JSON.stringify(liveStockDataList));
+            LS.set('myStockLastPriceUpdateTime', lastPriceUpdateTime);
+            LS.set('myStockApiSettings', JSON.stringify(apiSettings));
+            LS.set('myStockCloudSettings', JSON.stringify(cloudSettings));
+            LS.set('myStockPcMode', isPcMode);
+            LS.set('myStockUpdatedAt', String(localUpdatedAt));
+        }
+        function loadAllDataFromStorage() {
+            const read = (k, fb) => { try { const v = LS.get(k); return v ? JSON.parse(v) : fb; } catch (e) { return fb; } };
+            trendRawData = read('myStockTrendRawData', trendRawData);
+            pnlDataList = read('myStockPnlDataList', pnlDataList);
+            memoList = read('myStockMemoList', null) || [...defaultInitialMemos];
+            liveStockDataList = read('myStockLiveStockDataList', liveStockDataList);
+            apiSettings = { ...apiSettings, ...read('myStockApiSettings', {}) };
+            cloudSettings = { ...cloudSettings, ...read('myStockCloudSettings', {}) };
+            const tm = LS.get('myStockTrendMemoText'); if (tm !== null) trendMemoText = tm;
+            const lu = LS.get('myStockLastPriceUpdateTime'); if (lu) lastPriceUpdateTime = lu;
+            isPcMode = LS.get('myStockPcMode') === 'true';
+            localUpdatedAt = Number(LS.get('myStockUpdatedAt')) || 0;
+            normalizeState();
+            applyViewMode(); renderApp();
+            if (cloudSettings.token && cloudSettings.gistId) pullFromCloud(true);
+        }
+
+        function buildPayload(forCloud) {
+            // 클라우드(Gist)에는 API 키/시크릿을 올리지 않음
+            const api = forCloud ? { interval: apiSettings.interval } : apiSettings;
+            return { trendRawData, pnlDataList, memoList, trendMemoText, liveStockDataList, lastPriceUpdateTime, apiSettings: api, exportedAt: new Date(localUpdatedAt || Date.now()).toISOString() };
+        }
+        function applyPayload(data, fromCloud) {
+            if (Array.isArray(data.trendRawData)) trendRawData = data.trendRawData;
+            if (Array.isArray(data.pnlDataList)) pnlDataList = data.pnlDataList;
+            if (Array.isArray(data.memoList)) memoList = data.memoList;
+            if (Array.isArray(data.liveStockDataList)) liveStockDataList = data.liveStockDataList;
+            if (typeof data.trendMemoText === 'string') trendMemoText = data.trendMemoText;
+            if (typeof data.lastPriceUpdateTime === 'string') lastPriceUpdateTime = data.lastPriceUpdateTime;
+            if (data.apiSettings && typeof data.apiSettings === 'object') {
+                if (fromCloud) { if (data.apiSettings.interval) apiSettings.interval = data.apiSettings.interval; }
+                else apiSettings = { ...apiSettings, ...data.apiSettings };
+            }
+            normalizeState();
+        }
+
+        /* ═════════════ 클라우드 ═════════════ */
+        function setBusy(btnId, busy) { const b = $(btnId); if (b) b.disabled = busy; }
+        async function pushToCloud() {
+            if (!cloudSettings.token || !cloudSettings.gistId) return showToast('설정에서 GitHub Token과 Gist ID를 먼저 입력해주세요.', 'error');
+            if (!confirm('현재 기기의 데이터를 클라우드에 덮어씁니다. 계속하시겠습니까?')) return;
+            localUpdatedAt = Date.now();
+            showToast('클라우드에 저장하는 중...');
+            try {
+                const res = await fetch(`https://api.github.com/gists/${encodeURIComponent(cloudSettings.gistId)}`, {
+                    method: 'PATCH',
+                    headers: { 'Authorization': `Bearer ${cloudSettings.token}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ files: { 'mystock_data.json': { content: JSON.stringify(buildPayload(true), null, 2) } } })
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                saveAllDataToStorage(false);
+                showToast('클라우드에 백업되었습니다.', 'success');
+            } catch (err) {
+                showToast('클라우드 저장 실패. 토큰과 Gist ID를 확인해주세요.', 'error');
+            }
+        }
+        async function pullFromCloud(isInitialLoad = false) {
+            if (!cloudSettings.token || !cloudSettings.gistId) {
+                if (!isInitialLoad) showToast('설정에서 GitHub Token과 Gist ID를 먼저 입력해주세요.', 'error'); return;
+            }
+            if (!isInitialLoad && !confirm('클라우드 데이터를 불러와 덮어씁니다. 계속하시겠습니까?')) return;
+            try {
+                const res = await fetch(`https://api.github.com/gists/${encodeURIComponent(cloudSettings.gistId)}`, {
+                    headers: { 'Authorization': `Bearer ${cloudSettings.token}`, 'Accept': 'application/vnd.github+json' }
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const gist = await res.json();
+                const file = gist.files && gist.files['mystock_data.json'];
+                if (!file || !file.content) throw new Error('파일 누락');
+                const data = JSON.parse(file.content);
+                const cloudTs = Date.parse(data.exportedAt) || 0;
+                // 자동 불러오기 때 이 기기 데이터가 더 최신이면 덮어쓰지 않음 (데이터 유실 방지)
+                if (isInitialLoad && localUpdatedAt > cloudTs) {
+                    showToast('이 기기의 데이터가 더 최신이라 자동 불러오기를 건너뛰었어요.'); return;
+                }
+                applyPayload(data, true);
+                localUpdatedAt = cloudTs || localUpdatedAt;
+                saveAllDataToStorage(false); renderApp();
+                showToast('클라우드에서 최신 데이터를 불러왔습니다.', 'success');
+            } catch (err) {
+                showToast(isInitialLoad ? '클라우드 연결 실패 · 이 기기의 데이터를 표시합니다.' : '클라우드 불러오기 실패', 'error');
+            }
+        }
+
+        /* ═════════════ 백업 ═════════════ */
+        function exportBackup() {
+            const blob = new Blob([JSON.stringify(buildPayload(false), null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob), a = document.createElement('a');
+            a.href = url; a.download = `my-stock-backup-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.json`;
+            document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+            showToast('백업 파일을 저장했습니다.', 'success');
+        }
+        function importBackup(event) {
+            const file = event.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!confirm('백업 데이터로 현재 데이터를 덮어씁니다. 계속하시겠습니까?')) return;
+                    applyPayload(data, false); saveAllDataToStorage(); renderApp(); showToast('불러오기 완료', 'success');
+                } catch (err) { showToast('파일 형식이 올바르지 않습니다.', 'error'); }
+                finally { event.target.value = ''; }
+            };
+            reader.readAsText(file);
+        }
+
+        /* ═════════════ 현재가 ═════════════ */
+        async function fetchStockPriceViaProxy(stockCode) {
+            try {
+                const code = String(stockCode || '').trim(); if (!code) return null;
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 8000);
+                const res = await fetch(`https://stockmanage.dynamicong99.workers.dev?code=${encodeURIComponent(code)}`, { signal: controller.signal, cache: 'no-store' });
+                clearTimeout(timeoutId);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                const p = Number(data.currentPrice);
+                return p > 0 ? p : null;
+            } catch (err) { return null; }
+        }
+        async function updateAllStockPrices() {
+            if (isUpdatingPrices) return;
+            const codes = [...new Set(liveStockDataList.map(i => i.code).filter(Boolean))];
+            if (!codes.length) return showToast('등록된 종목코드가 없습니다.', 'error');
+            isUpdatingPrices = true;
+            const btn = $('priceUpdateBtn'); btn.disabled = true; btn.classList.add('loading');
+            const priceMap = {}, failed = [];
+            try {
+                for (const code of codes) {
+                    const p = await fetchStockPriceViaProxy(code);
+                    if (p) priceMap[code] = p;
+                    else { const t = liveStockDataList.find(i => i.code === code); failed.push(t ? t.stock : code); }
+                    await new Promise(r => setTimeout(r, 200));
+                }
+                let updated = 0;
+                liveStockDataList.forEach(i => { if (i.code && priceMap[i.code]) { i.currentPrice = priceMap[i.code]; updated++; } });
+                if (updated > 0) {
+                    const d = new Date(), z = (n) => String(n).padStart(2, '0');
+                    lastPriceUpdateTime = `${d.getFullYear()}.${z(d.getMonth() + 1)}.${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`;
+                }
+                saveAllDataToStorage(); renderLiveStocks(); updateChartBasedOnLiveStocks();
+                if (failed.length) showToast(`${updated}개 업데이트 · 실패: ${failed.join(', ')}`, 'error');
+                else showToast(`현재가 업데이트 완료 (${updated}개)`, 'success');
+            } finally {
+                isUpdatingPrices = false; btn.disabled = false; btn.classList.remove('loading');
+            }
+        }
+        function setupAutoUpdateTimer() {
+            if (autoUpdateTimer) clearInterval(autoUpdateTimer);
+            if (apiSettings.interval !== 'manual') autoUpdateTimer = setInterval(updateAllStockPrices, Number(apiSettings.interval) * 60 * 1000);
+        }
+
+        /* ═════════════ 설정 ═════════════ */
+        function openApiSettingsModal() {
+            $('api-app-key').value = apiSettings.appKey || ''; $('api-app-secret').value = apiSettings.appSecret || '';
+            $('api-update-interval').value = apiSettings.interval || '30';
+            $('cloud-token').value = cloudSettings.token || ''; $('cloud-gist-id').value = cloudSettings.gistId || '';
+            openModal('apiSettingsModal');
+        }
+        function closeApiSettingsModal() { closeModal('apiSettingsModal'); }
+        function saveSettings() {
+            apiSettings.appKey = $('api-app-key').value.trim(); apiSettings.appSecret = $('api-app-secret').value.trim();
+            apiSettings.interval = $('api-update-interval').value;
+            cloudSettings.token = $('cloud-token').value.trim(); cloudSettings.gistId = $('cloud-gist-id').value.trim();
+            saveAllDataToStorage(false); setupAutoUpdateTimer(); closeApiSettingsModal(); showToast('설정이 저장되었습니다.', 'success');
+        }
+
+        /* ═════════════ 인증 / 테마 / 마스킹 ═════════════ */
+        function handleInitialAuth(event) {
+            event.preventDefault();
+            const pw = $('initialAuthPassword');
+            if (pw.value.trim() === AUTH_PASSWORD) {
+                $('authOverlay').classList.add('hidden');
+                loadAllDataFromStorage(); setupAutoUpdateTimer();
+            } else {
+                $('authErrorMsg').classList.remove('hidden');
+                const card = $('authCard'); card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
+                pw.value = ''; pw.focus();
+            }
+        }
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            LS.set('myStockDarkMode', document.documentElement.classList.contains('dark'));
+            renderApp();
+        }
+        function toggleMask() {
+            isMasked = !isMasked;
+            setIcon('maskIconWrap', isMasked ? 'eye-off' : 'eye');
+            renderApp();
+        }
+
+        /* ═════════════ 상단 자산 요약 ═════════════ */
+        function updateTopTotalAssets() {
+            let totalPurchase = 0, totalEval = 0;
+            liveStockDataList.forEach(i => {
+                totalPurchase += i.purchaseAmount;
+                totalEval += i.currentPrice > 0 ? i.currentPrice * i.quantity : i.purchaseAmount;
+            });
+            // 올해 확정손익: '2026' / '26' / '2026.03' 등을 인식 (연도 문자열에 숫자가 우연히 포함되는 오탐 방지)
+            const y4 = String(new Date().getFullYear()), y2 = y4.slice(-2);
+            const re = new RegExp(`(^|\\D)(${y4}|${y2})(\\D|$)`);
+            const realized = pnlDataList.reduce((s, i) => re.test(String(i.year)) ? s + (Number(i.amount) || 0) : s, 0);
+            const realtime = totalEval - totalPurchase, totalPnl = realized + realtime;
+            const hasStocks = liveStockDataList.length > 0;
+
+            setVal($('total-purchase-text'), formatAmountBillion(totalPurchase), 'flat');
+            setVal($('realized-pnl-text'), formatAmountBillion(realized, true), tone(realized));
+            if (!hasStocks) {
+                setVal($('total-eval-text'), '-', 'flat'); setVal($('total-rate-text'), '-', 'flat');
+                setVal($('realtime-pnl-text'), '-', 'flat'); setVal($('total-pnl-text'), formatAmountBillion(realized, true), tone(realized));
+                $('total-eval-sub').innerHTML = '&nbsp;'; return;
+            }
+            const rate = totalPurchase > 0 ? (realtime / totalPurchase) * 100 : 0;
+            setVal($('total-eval-text'), formatAmountBillion(totalEval), 'flat');
+            $('total-eval-sub').textContent = isMasked ? '••••••원' : `${won(totalEval)}원`;
+            setVal($('total-rate-text'), isMasked ? '••••' : `${realtime > 0 ? '+' : ''}${rate.toFixed(1)}%`, tone(realtime));
+            setVal($('realtime-pnl-text'), formatAmountBillion(realtime, true), tone(realtime));
+            setVal($('total-pnl-text'), formatAmountBillion(totalPnl, true), tone(totalPnl));
+        }
+
+        /* ═════════════ 종목 카드 ═════════════ */
+        function renderLiveStocks() {
+            const container = $('live-stock-container'); if (!container) return;
+            container.className = isPcMode ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 items-start' : 'flex flex-col gap-3';
+            $('last-price-update-time').textContent = `현재가 기준 ${lastPriceUpdateTime}`;
+            if (!liveStockDataList.length) {
+                container.innerHTML = `<div class="empty" style="grid-column:1/-1">등록된 종목이 없습니다.<br><button class="btn btn-rose" style="margin-top:14px" onclick="openLiveStockModal()"><i data-lucide="plus" class="w-4 h-4"></i>종목 추가</button></div>`;
+                icons(); updateTopTotalAssets(); return;
+            }
+            const groups = {};
+            liveStockDataList.forEach(item => {
+                const name = (item.stock || '이름없음').trim();
+                const g = groups[name] || (groups[name] = { stock: name, code: '', totalPurchase: 0, totalQty: 0, accounts: [] });
+                if (!g.code && item.code) g.code = item.code;
+                g.totalPurchase += item.purchaseAmount; g.totalQty += item.quantity; g.accounts.push(item);
+            });
+            const html = Object.values(groups).sort((a, b) => b.totalPurchase - a.totalPurchase).map(g => {
+                let groupEval = 0, hasAll = true;
+                g.accounts.forEach(a => { if (a.currentPrice > 0) groupEval += a.currentPrice * a.quantity; else hasAll = false; });
+                const rep = g.accounts.find(a => a.currentPrice > 0);
+                const profit = hasAll ? groupEval - g.totalPurchase : 0;
+                const rate = hasAll && g.totalPurchase > 0 ? (profit / g.totalPurchase) * 100 : 0;
+                const cls = hasAll ? tone(profit) : 'flat';
+                const rows = g.accounts.map(a => {
+                    const has = a.currentPrice > 0, ev = has ? a.currentPrice * a.quantity : null, pf = has ? ev - a.purchaseAmount : 0;
+                    return `<button type="button" onclick="openLiveStockModal(${a.id})" class="acct">
+                        <div class="flex items-center gap-2 min-w-0"><span class="chip">${escapeHtml(a.account)}</span><span style="font-size:12px;color:var(--sub);font-weight:600">${M(a.quantity.toLocaleString() + '주')}</span></div>
+                        <div class="text-right" style="min-width:0">
+                            <div style="font-size:12px;font-weight:700">${M(won(a.purchaseAmount) + '원')}</div>
+                            <div class="${has ? tone(pf) : 'flat'}" style="font-size:11px;font-weight:700">${has ? M(won(ev) + '원') : '-'}</div>
+                        </div></button>`;
+                }).join('');
+                return `<article class="stock-card">
+                    <div class="flex items-start justify-between gap-3">
+                        <div style="min-width:0">
+                            <h3 class="stock-name truncate">${escapeHtml(g.stock)}</h3>
+                            <div class="stock-meta">${escapeHtml(g.code || '코드 없음')} · 현재가 ${M(rep ? won(rep.currentPrice) + '원' : '-')}</div>
+                        </div>
+                        <div class="text-right" style="flex-shrink:0">
+                            <div class="stock-eval">${hasAll ? M(won(groupEval) + '원') : '-'}</div>
+                            <span class="badge ${cls}">${hasAll ? M(`${profit > 0 ? '+' : ''}${rate.toFixed(1)}%`) : '-'}</span>
+                        </div>
+                    </div>
+                    <div class="kv">
+                        <div><p>총 매입</p><b>${M(won(g.totalPurchase) + '원')}</b></div>
+                        <div><p>수량</p><b>${M(g.totalQty.toLocaleString() + '주')}</b></div>
+                        <div><p>평가손익</p><b class="${cls}">${hasAll ? M(`${profit > 0 ? '+' : ''}${won(profit)}원`) : '-'}</b></div>
+                    </div>
+                    <div class="flex flex-col gap-2" style="margin-top:12px">${rows}</div>
+                </article>`;
+            }).join('');
+            container.innerHTML = html;
+            updateTopTotalAssets();
+        }
+
+        /* 종목 모달 */
+        function openLiveStockModal(id = null) {
+            const item = id !== null ? liveStockDataList.find(x => x.id === Number(id)) : null;
+            $('ls-modal-title').textContent = item ? '종목 수정' : '종목 추가';
+            $('ls-id').value = item ? item.id : '';
+            $('ls-account').value = item ? item.account : ''; $('ls-stock').value = item ? item.stock : '';
+            $('ls-code').value = item ? item.code : ''; $('ls-purchase').value = item ? item.purchaseAmount : '';
+            $('ls-avg').value = item ? item.averagePrice : ''; $('ls-qty').value = item ? item.quantity : '';
+            $('ls-delete-btn').classList.toggle('hidden', !item);
+            openModal('liveStockModal');
+        }
+        function closeLiveStockModal() { closeModal('liveStockModal'); }
+        function saveLiveStock() {
+            const idVal = $('ls-id').value, account = $('ls-account').value.trim(), stock = $('ls-stock').value.trim(), code = $('ls-code').value.trim();
+            let purchase = Number($('ls-purchase').value) || 0, avg = Number($('ls-avg').value) || 0;
+            const qty = Number($('ls-qty').value) || 0;
+            if (!account || !stock) return showToast('계좌명과 종목명은 필수입니다.', 'error');
+            if (code && !/^[0-9A-Za-z]{6}$/.test(code)) return showToast('종목코드는 6자리로 입력해주세요.', 'error');
+            if (!purchase && avg && qty) purchase = Math.round(avg * qty);      // 매입금액 자동 계산
+            if (!avg && purchase && qty) avg = Math.round(purchase / qty);      // 평단가 자동 계산
+            if (idVal) {
+                const idx = liveStockDataList.findIndex(x => x.id === Number(idVal));
+                if (idx > -1) liveStockDataList[idx] = { ...liveStockDataList[idx], account, stock, code, purchaseAmount: purchase, averagePrice: avg, quantity: qty };
+            } else {
+                liveStockDataList.push({ id: Date.now(), account, stock, code, purchaseAmount: purchase, averagePrice: avg, quantity: qty, currentPrice: null });
+            }
+            saveAllDataToStorage(); renderLiveStocks(); updateChartBasedOnLiveStocks(); closeLiveStockModal();
+        }
+        function deleteLiveStock() {
+            const idVal = $('ls-id').value;
+            if (idVal && confirm('이 종목을 삭제하시겠습니까?')) {
+                liveStockDataList = liveStockDataList.filter(x => x.id !== Number(idVal));
+                saveAllDataToStorage(); renderLiveStocks(); updateChartBasedOnLiveStocks(); closeLiveStockModal();
+            }
+        }
+
+        /* ═════════════ 차트 공통 ═════════════ */
+        function chartTheme() {
+            const dark = document.documentElement.classList.contains('dark');
+            return { dark, text: dark ? '#eceff6' : '#0f172a', sub: dark ? '#9aa4b8' : '#5b6577', card: dark ? '#11141c' : '#ffffff',
+                up: dark ? '#ff6b70' : '#e5484d', down: dark ? '#6ea3ff' : '#2f6fed', accent: dark ? '#7397ff' : '#3b6cf6' };
+        }
+        function themeCharts() {
+            const t = chartTheme();
+            Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+            Chart.defaults.color = t.sub;
+            Object.assign(Chart.defaults.plugins.tooltip, { backgroundColor: 'rgba(15,23,42,.95)', titleColor: '#fff', bodyColor: '#e2e8f0', padding: 10, cornerRadius: 10, boxPadding: 4, displayColors: false });
+            return t;
+        }
+        function fontStr(w, s) { return `${w} ${s}px ${Chart.defaults.font.family}`; }
+
+        /* ═════════════ 매입 비중 (도넛 + 범례) ═════════════ */
+        function updateChartBasedOnLiveStocks() {
+            const stockMap = {}; let grand = 0;
+            liveStockDataList.forEach(i => { grand += i.purchaseAmount; const s = (i.stock || '').trim(); if (s) stockMap[s] = (stockMap[s] || 0) + i.purchaseAmount; });
+            const sorted = Object.entries(stockMap).sort((a, b) => b[1] - a[1]);
+            $('stock-summary-body').innerHTML = sorted.length ? sorted.map(([stk, amt], idx) => {
+                const w = grand > 0 ? (amt / grand) * 100 : 0, c = String(stk).includes('TIGER_IT') ? '#8b5a2b' : CHART_COLORS[idx % CHART_COLORS.length];
+                return `<div class="legend-row"><span class="dot" style="background:${c}"></span>
+                    <div style="flex:1;min-width:0">
+                        <div class="flex justify-between gap-2" style="font-size:12.5px"><span style="font-weight:700" class="truncate">${escapeHtml(stk)}</span><span style="font-weight:700">${w.toFixed(1)}%</span></div>
+                        <div class="flex justify-between gap-2" style="font-size:11px;color:var(--mute);margin-top:2px"><span>${M(won(amt) + '원')}</span></div>
+                        <div class="bar"><i style="width:${w.toFixed(1)}%;background:${c}"></i></div>
+                    </div></div>`;
+            }).join('') : `<div class="empty">등록된 종목이 없습니다.</div>`;
+            updateChart(sorted, grand);
+        }
+        function shortName(n, max) { return n.length > max ? n.slice(0, max - 1) + '…' : n; }
+        function updateChart(sorted, grand) {
+            const t = themeCharts();
+            if (pieChart) pieChart.destroy();
+            pieChart = new Chart($('stockPieChart').getContext('2d'), {
+                type: 'doughnut',
+                data: { labels: sorted.map(i => i[0]), datasets: [{ data: sorted.map(i => i[1]), backgroundColor: sorted.map((it, i) => String(it[0]).includes('TIGER_IT') ? '#8b5a2b' : CHART_COLORS[i % CHART_COLORS.length]), borderColor: t.card, borderWidth: 2, hoverOffset: 8 }] },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '38%', layout: { padding: 8 },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { displayColors: true, callbacks: { label: (c) => { const p = grand > 0 ? (c.raw / grand * 100).toFixed(1) : '0.0'; return ` ${c.label}: ${isMasked ? '••••••' : c.raw.toLocaleString() + '원'} (${p}%)`; } } },
+                        datalabels: {
+                            textAlign: 'center', font: { weight: '700', size: 9 }, borderRadius: 4, padding: { top: 2, bottom: 2, left: 4, right: 4 }, clip: false,
+                            color: (ctx) => ctx.dataIndex === 0 ? '#ffffff' : '#111111',
+                            backgroundColor: (ctx) => ctx.dataIndex === 0 ? '#111111' : '#e4e4e7',
+                            anchor: 'center', align: 'center', offset: 0,
+                            formatter: (v, ctx) => {
+                                if (grand <= 0 || v <= 0) return '';
+                                const p = (v / grand) * 100, name = String(ctx.chart.data.labels[ctx.dataIndex]), lines = [];
+                                for (let i = 0; i < name.length; i += 6) lines.push(name.slice(i, i + 6));
+                                return lines.join('\n') + '\n(' + p.toFixed(1) + '%)';
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        /* ═════════════ 트렌드 차트 ═════════════ */
+        function dateVal(s) {
+            const m = String(s).trim().match(/^(\d{2,4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
+            if (!m) return Number.MAX_SAFE_INTEGER;
+            const y = m[1].length === 2 ? 2000 + Number(m[1]) : Number(m[1]);
+            return y * 10000 + Number(m[2]) * 100 + Number(m[3]);
+        }
+        const TREND_NOTES = { '3/6': '+1억 입금', '5/31': '+주식보상 30주', '6/25': '+천만원 입금', '7/12': '+주식보상 22주' };
+        function trendNote(d) { const m = String(d).trim().match(/(\d{1,2})[.\-\/](\d{1,2})\s*$/); return m ? (TREND_NOTES[Number(m[1]) + '/' + Number(m[2])] || '') : ''; }
+        const TREND_BASE = 820000000; // 트렌드 기준금액 8.2억
+        function updateTrendChart() {
+            const t = themeCharts(), map = {};
+            trendRawData.forEach(i => { const k = i.date.trim(); if (k) map[k] = (map[k] || 0) + i.amount; });
+            const keys = Object.keys(map).sort((a, b) => dateVal(a) - dateVal(b));
+            const amounts = keys.map(k => map[k]), base = TREND_BASE;
+            $('trend-empty').classList.toggle('hidden', keys.length > 0);
+            $('trendChartWrap').classList.toggle('hidden', keys.length === 0);
+            $('trendChartWrap').style.height = Math.max(120, keys.length * 34 + 16) + 'px';
+            if (trendChart) trendChart.destroy();
+            if (!keys.length) { trendChart = null; return; }
+            trendChart = new Chart($('trendBarChart').getContext('2d'), {
+                type: 'bar',
+                data: { labels: keys, datasets: [{ data: amounts, backgroundColor: amounts.map(() => document.documentElement.classList.contains('dark') ? '#fb923c' : '#ea580c'), borderRadius: 7, barThickness: 18 }] },
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false, layout: { padding: { right: 200 } },
+                    scales: { x: { display: false, beginAtZero: true }, y: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 11, weight: '600' } } } },
+                    plugins: { legend: { display: false }, datalabels: { display: false }, tooltip: { callbacks: { label: (c) => `총 평가금: ${isMasked ? '••••••' : c.raw.toLocaleString() + '원'}` } } }
+                },
+                plugins: [{
+                    id: 'valueTags',
+                    afterDatasetsDraw(chart) {
+                        const { ctx } = chart; ctx.save(); ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+                        chart.getDatasetMeta(0).data.forEach((el, i) => {
+                            const tot = amounts[i] || 0, eStr = isMasked ? '••••••' : fmtEok(tot);
+                            ctx.font = fontStr('800', 11.5); ctx.fillStyle = t.text; ctx.fillText(eStr, el.x + 8, el.y);
+                            const note = trendNote(keys[i]);
+                            if (note) { const w = ctx.measureText(eStr + '  ').width; ctx.font = fontStr('700', 10.5); ctx.fillStyle = t.up; ctx.fillText(note, el.x + 8 + w, el.y); }
+                        });
+                        ctx.restore();
+                    }
+                }]
+            });
+        }
+
+        /* ═════════════ 확정손익 차트 ═════════════ */
+        function updatePnlChart() {
+            const t = themeCharts(), gMap = {}, aMap = {};
+            pnlDataList.forEach(i => { const y = i.year.trim() || '미입력'; gMap[y] = (gMap[y] || 0) + i.amount; (aMap[y] = aMap[y] || []).push(`${i.account || '계좌'}: ${won(i.amount)}원`); });
+            const yrs = Object.keys(gMap).sort(), amts = yrs.map(y => gMap[y]), sum = amts.reduce((a, c) => a + c, 0);
+            const sumEl = $('pnl-grand-total'); sumEl.textContent = isMasked ? '••••••' : won(sum);
+            sumEl.classList.remove('pos', 'neg', 'flat'); sumEl.classList.add(isMasked ? 'flat' : tone(sum));
+            $('pnl-empty').classList.toggle('hidden', yrs.length > 0);
+            $('pnlChartWrap').classList.toggle('hidden', yrs.length === 0);
+            $('pnlChartWrap').style.height = Math.max(120, yrs.length * 40 + 16) + 'px';
+            if (pnlChart) pnlChart.destroy();
+            if (!yrs.length) { pnlChart = null; return; }
+            pnlChart = new Chart($('pnlBarChart').getContext('2d'), {
+                type: 'bar',
+                data: { labels: yrs, datasets: [{ data: amts, backgroundColor: amts.map(v => v < 0 ? t.down : t.up), borderRadius: 7, barThickness: 22 }] },
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false, layout: { padding: { left: 4, right: 74 } },
+                    scales: { x: { display: false }, y: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 11, weight: '600' } } } },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: (c) => { const r = [`총 합계: ${isMasked ? '••••••' : c.raw.toLocaleString() + '원'}`]; if (!isMasked) r.push(...(aMap[c.label] || []).map(x => ` - ${x}`)); return r; } } },
+                        datalabels: { display: false }
+                    }
+                },
+                plugins: [{
+                    id: 'pnlTags',
+                    afterDatasetsDraw(chart) {
+                        const { ctx } = chart, zeroX = chart.scales.x.getPixelForValue(0);
+                        ctx.save(); ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.font = fontStr('800', 11.5);
+                        chart.getDatasetMeta(0).data.forEach((el, i) => {
+                            const v = amts[i], av = Math.abs(v), sg = v < 0 ? '-' : (v > 0 ? '+' : '');
+                            const txt = isMasked ? '••••••' : (av >= 1e8 ? `${sg}${(av / 1e8).toFixed(2)}억` : `${sg}${(av / 1e4).toFixed(1)}만`);
+                            ctx.fillStyle = v < 0 ? t.down : t.up;
+                            ctx.fillText(txt, (v < 0 ? zeroX : el.x) + 8, el.y);
+                        });
+                        ctx.restore();
+                    }
+                }]
+            });
+        }
+
+        function renderApp() { renderLiveStocks(); updateChartBasedOnLiveStocks(); updateTrendChart(); updatePnlChart(); renderMainPinnedMemo(); icons(); }
+
+        /* ═════════════ 확정손익 편집 ═════════════ */
+        function togglePnlEditMode() {
+            isPnlEditMode = !isPnlEditMode;
+            $('pnlEditContainer').classList.toggle('hidden', !isPnlEditMode);
+            setIcon('pnlEditIconWrap', isPnlEditMode ? 'check' : 'pencil');
+            if (isPnlEditMode) renderPnlEditRows(); else { saveAllDataToStorage(); updatePnlChart(); updateTopTotalAssets(); }
+        }
+        function renderPnlEditRows() {
+            $('pnl-edit-tbody').innerHTML = pnlDataList.map((row, i) => `<tr>
+                <td style="padding:4px 4px 4px 0;width:22%"><input type="text" value="${escapeHtml(row.year)}" oninput="updatePnlRow(${i}, 'year', this.value)" class="cell-input" placeholder="2026"></td>
+                <td style="padding:4px 4px 4px 0"><input type="text" value="${escapeHtml(row.account)}" oninput="updatePnlRow(${i}, 'account', this.value)" class="cell-input"></td>
+                <td style="padding:4px 4px 4px 0;width:34%"><input type="number" inputmode="numeric" value="${row.amount}" oninput="updatePnlRow(${i}, 'amount', this.value)" class="cell-input text-right"></td>
+                <td class="text-center"><button onclick="deletePnlRow(${i})" aria-label="행 삭제" style="color:#f87171;background:none;border:0"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button></td></tr>`).join('');
+            icons();
+        }
+        function addPnlRow() { pnlDataList.push({ year: String(new Date().getFullYear()), account: '', amount: 0 }); renderPnlEditRows(); }
+        function updatePnlRow(i, f, v) { if (pnlDataList[i]) pnlDataList[i][f] = f === 'amount' ? (Number(v) || 0) : v; }
+        function deletePnlRow(i) { if (confirm('이 내역을 삭제하시겠습니까?')) { pnlDataList.splice(i, 1); renderPnlEditRows(); } }
+
+        /* ═════════════ 트렌드 편집 ═════════════ */
+        function liveEvalTotal() {
+            let tot = 0, valid = liveStockDataList.length > 0;
+            liveStockDataList.forEach(i => { if (i.currentPrice > 0) tot += i.currentPrice * i.quantity; else valid = false; });
+            return { tot, valid };
+        }
+        function openTrendModal() {
+            const { tot } = liveEvalTotal();
+            $('modal-auto-eval-preview').textContent = tot > 0 ? won(tot) + '원' : '현재가 연동 평가금 없음';
+            renderTrendEditRows(); openModal('trendDataModal');
+        }
+        function closeTrendModal() { closeModal('trendDataModal'); saveAllDataToStorage(); renderApp(); }
+        function renderTrendEditRows() {
+            $('trend-edit-tbody').innerHTML = trendRawData.map((r, i) => `<tr>
+                <td style="padding:4px 4px 4px 0"><input type="text" value="${escapeHtml(r.date)}" oninput="updateTrendRow(${i}, 'date', this.value)" class="cell-input"></td>
+                <td style="padding:4px 4px 4px 0"><input type="number" inputmode="numeric" value="${r.amount}" oninput="updateTrendRow(${i}, 'amount', this.value)" class="cell-input text-right"></td>
+                <td class="text-center"><button onclick="deleteTrendRow(${i})" aria-label="행 삭제" style="color:#f87171;background:none;border:0"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button></td></tr>`).join('');
+            icons();
+        }
+        function addTrendRowFromLive() {
+            const { tot, valid } = liveEvalTotal();
+            if (tot <= 0 || !valid) return showToast('모든 종목의 현재가가 있어야 추가할 수 있어요. 먼저 현재가를 업데이트해주세요.', 'error');
+            const d = new Date(), z = (n) => String(n).padStart(2, '0');
+            trendRawData.push({ date: `${String(d.getFullYear()).slice(-2)}.${z(d.getMonth() + 1)}.${z(d.getDate())}`, amount: tot });
+            renderTrendEditRows(); $('modal-auto-eval-preview').textContent = '추가 완료!';
+        }
+        function updateTrendRow(i, f, v) { if (trendRawData[i]) trendRawData[i][f] = f === 'amount' ? (Number(v) || 0) : v; }
+        function deleteTrendRow(i) { if (confirm('이 내역을 삭제하시겠습니까?')) { trendRawData.splice(i, 1); renderTrendEditRows(); } }
+
+        /* ═════════════ 메모 ═════════════ */
+        function renderMainPinnedMemo() {
+            const c = $('mainPinnedMemoContainer'), p = memoList.find(m => m.isPinned);
+            c.innerHTML = p ? `<div class="note"><i data-lucide="pin" class="w-4 h-4"></i><span>${escapeHtml(p.text)}</span></div>` : `<div class="empty">고정된 메모가 없습니다.</div>`;
+            icons();
+        }
+        function openNewMemoEditor() { openModal('newMemoModal'); setTimeout(() => $('newMemoText').focus(), 50); }
+        function closeNewMemoEditor() { closeModal('newMemoModal'); }
+        function saveNewMemo() {
+            const txt = $('newMemoText').value.trim(); if (!txt) return showToast('내용을 입력해주세요.', 'error');
+            memoList.forEach(m => m.isPinned = false); memoList.unshift({ id: Date.now(), text: txt, isPinned: true });
+            saveAllDataToStorage(); $('newMemoText').value = ''; renderMainPinnedMemo(); closeNewMemoEditor();
+        }
+        function openMemoViewModal() { editingMemoId = null; renderMemoListView(); openModal('memoViewModal'); }
+        function closeMemoViewModal() { editingMemoId = null; closeModal('memoViewModal'); }
+        function startEditMemo(id) { editingMemoId = id; renderMemoListView(); }
+        function cancelEditMemo() { editingMemoId = null; renderMemoListView(); }
+        function saveEditedMemo(id) {
+            const tx = $(`editMemoInput_${id}`); if (!tx) return;
+            const nt = tx.value.trim(); if (!nt) return showToast('내용을 입력해주세요.', 'error');
+            const m = memoList.find(x => x.id === id);
+            if (m) { m.text = nt; editingMemoId = null; saveAllDataToStorage(); renderMemoListView(); renderMainPinnedMemo(); }
+        }
+        function renderMemoListView() {
+            const el = $('memoListView');
+            if (!memoList.length) { el.innerHTML = `<div class="empty" style="padding:40px 0">저장된 메모가 없습니다.</div>`; return; }
+            el.innerHTML = memoList.map(m => {
+                if (m.id === editingMemoId) return `<div class="card" style="padding:14px;border-color:var(--amber)">
+                    <textarea id="editMemoInput_${m.id}" class="field" style="resize:vertical;font-size:13px" rows="5">${escapeHtml(m.text)}</textarea>
+                    <div class="flex justify-end gap-2" style="margin-top:10px">
+                        <button onclick="cancelEditMemo()" class="btn btn-ghost" style="padding:8px 14px;font-size:12px">취소</button>
+                        <button onclick="saveEditedMemo(${m.id})" class="btn btn-amber" style="padding:8px 14px;font-size:12px">저장</button></div></div>`;
+                return `<div class="card" style="padding:14px;${m.isPinned ? 'border-color:color-mix(in srgb,var(--amber) 45%,transparent)' : ''}">
+                    <div onclick="startEditMemo(${m.id})" style="font-size:13px;font-weight:500;line-height:1.65;white-space:pre-line;cursor:pointer">${escapeHtml(m.text)}</div>
+                    <div class="flex justify-between items-center" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+                        <span style="font-size:11px;color:var(--mute)">탭하여 수정</span>
+                        <div class="flex gap-1.5">
+                            <button onclick="toggleMemoPin(${m.id})" class="btn ${m.isPinned ? 'btn-amber' : 'btn-ghost'}" style="padding:6px 11px;font-size:11px">${m.isPinned ? '고정됨' : '고정하기'}</button>
+                            <button onclick="deleteMemo(${m.id})" class="btn btn-danger" style="padding:6px 11px;font-size:11px">삭제</button></div></div></div>`;
+            }).join('');
+            icons();
+        }
+        function toggleMemoPin(id) {
+            const t = memoList.find(m => m.id === id); if (!t) return;
+            const willPin = !t.isPinned; if (willPin) memoList.forEach(m => m.isPinned = false);
+            t.isPinned = willPin; saveAllDataToStorage(); renderMemoListView(); renderMainPinnedMemo();
+        }
+        function deleteMemo(id) {
+            if (!confirm('이 메모를 삭제하시겠습니까?')) return;
+            memoList = memoList.filter(m => m.id !== id); if (editingMemoId === id) editingMemoId = null;
+            saveAllDataToStorage(); renderMemoListView(); renderMainPinnedMemo();
+        }
+
+        window.addEventListener('DOMContentLoaded', () => { loadLayout(); applyLayout(); icons(); $('initialAuthPassword').focus(); });
+    </script>
+</body>
+</html>
